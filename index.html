@@ -255,6 +255,15 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 .study-answer-row{display:flex;gap:10px;margin-top:16px;}
 .study-answer-row .continue-btn{padding:14px 10px;}
 
+.quiz-opt{
+  width:100%;text-align:left;padding:12px 14px;border:1.5px solid var(--ink);
+  border-radius:var(--radius);background:var(--cream);color:var(--ink);
+  font-family:inherit;font-size:13.5px;font-weight:600;
+}
+.quiz-opt:disabled{opacity:.85;}
+.quiz-opt.correct{background:var(--green);color:#fff;border-color:var(--green);}
+.quiz-opt.wrong{background:var(--burgundy);color:#fff;border-color:var(--burgundy);}
+
 ::-webkit-scrollbar{display:none;}
 .hidden{display:none !important;}
 
@@ -557,6 +566,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     {id:'resources', label:'Resources & Grammar'},
     {id:'vocab', label:'Vocab & Dialogue'},
     {id:'speak', label:'Speaking & Self-Check'},
+    {id:'quiz', label:'Quiz'},
   ];
 
   function findWeek(n){ return CURRICULUM.find(w => w.week === n); }
@@ -564,6 +574,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   function openWeek(weekNum, tab){
     const w = findWeek(weekNum);
     if(!w) return;
+    QUIZ = null;
     STATE.lastWeek = weekNum;
     STATE.lastTab = tab || STATE.lastTab || 'days';
     saveState();
@@ -612,11 +623,11 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 
   function renderTabPanel(w, tab){
     const panel = document.getElementById('weekPanel');
-    if(tab === 'days') panel.innerHTML = renderDaysTab(w);
-    else if(tab === 'resources') panel.innerHTML = renderResourcesTab(w);
-    else if(tab === 'vocab') panel.innerHTML = renderVocabTab(w);
-    else panel.innerHTML = renderSpeakTab(w);
-    wireInteractive(w, tab);
+    if(tab === 'days'){ panel.innerHTML = renderDaysTab(w); wireInteractive(w, tab); }
+    else if(tab === 'resources'){ panel.innerHTML = renderResourcesTab(w); wireInteractive(w, tab); }
+    else if(tab === 'vocab'){ panel.innerHTML = renderVocabTab(w); wireInteractive(w, tab); }
+    else if(tab === 'quiz'){ renderQuizTab(w); }
+    else { panel.innerHTML = renderSpeakTab(w); wireInteractive(w, tab); }
   }
 
   function renderDaysTab(w){
@@ -1032,6 +1043,152 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       };
     }
     document.getElementById('doneStudyBtn').onclick = () => { STUDY = null; renderFlashHome(); };
+  }
+
+  // ---------- QUIZ ----------
+  let QUIZ = null;
+  const GERMAN_STOPWORDS = new Set(['ich','du','er','sie','es','wir','ihr','der','die','das','dem','den','des',
+    'ein','eine','einen','einem','einer','eines','und','ist','sind','war','waren','bin','bist','seid','sein',
+    'habe','hast','hat','habt','haben','hatte','zu','mit','von','auf','für','im','in','am','um','an','bei',
+    'nach','vor','über','unter','aber','oder','wenn','dass','wie','was','wer','wo','wann','warum','nicht',
+    'auch','noch','schon','gern','sehr','so','nur','mal','ja','nein','bitte','danke','hier','da','dann',
+    'doch','denn','also','wird','werden','wirst','werdet','kann','kannst','können','könnt','muss','musst',
+    'müssen','müsst','will','willst','wollen','wollt','soll','sollst','sollen','sollt','darf','darfst',
+    'dürfen','dürft']);
+
+  function tokenizeGermanLine(line){
+    return line.split(/\s+/).map(w => w.replace(/[.,!?;:„"'’]/g,'')).filter(w => w.length > 0);
+  }
+
+  function buildVocabQuestions(w){
+    const vocab = w.vocab || [];
+    const questions = [];
+    vocab.forEach((pair, idx) => {
+      const deToEn = Math.random() < 0.5;
+      const promptText = deToEn ? pair[0] : pair[1];
+      const answer = deToEn ? pair[1] : pair[0];
+      let pool = vocab.filter((_, i) => i !== idx).map(p => deToEn ? p[1] : p[0]);
+      pool = shuffle(pool.slice()).slice(0, 3);
+      if(pool.length < 3) return;
+      const options = shuffle([answer, ...pool]);
+      questions.push({type: 'vocab', prompt: promptText, answer, options});
+    });
+    return questions;
+  }
+
+  function buildFillBlankQuestions(w){
+    const lines = (w.dialogue || []).map(d => d[1]).filter(Boolean);
+    const questions = [];
+    let allWords = [];
+    lines.forEach(line => {
+      tokenizeGermanLine(line).forEach(word => {
+        if(word.length >= 4 && !GERMAN_STOPWORDS.has(word.toLowerCase())) allWords.push(word);
+      });
+    });
+    allWords = Array.from(new Set(allWords));
+
+    lines.forEach(line => {
+      const words = tokenizeGermanLine(line);
+      const candidates = words.filter(word => word.length >= 4 && !GERMAN_STOPWORDS.has(word.toLowerCase()));
+      if(candidates.length === 0) return;
+      const answer = candidates[Math.floor(Math.random() * candidates.length)];
+      const blanked = line.replace(answer, '_____');
+      if(blanked === line) return;
+      let distractorPool = allWords.filter(word => word.toLowerCase() !== answer.toLowerCase());
+      distractorPool = shuffle(distractorPool.slice()).slice(0, 3);
+      if(distractorPool.length < 3) return;
+      const options = shuffle([answer, ...distractorPool]);
+      questions.push({type: 'fill', prompt: blanked, answer, options});
+    });
+    return questions;
+  }
+
+  function buildQuizQuestions(w){
+    return shuffle([...buildVocabQuestions(w), ...buildFillBlankQuestions(w)]);
+  }
+
+  function renderQuizTab(w){
+    if(QUIZ && QUIZ.weekNum === w.week){
+      if(QUIZ.finished) return renderQuizResult(w);
+      return renderQuizQuestion(w);
+    }
+    const panel = document.getElementById('weekPanel');
+    const qs = buildQuizQuestions(w);
+    if(qs.length === 0){
+      panel.innerHTML = `<div class="empty-phase"><p>Not enough vocabulary or dialogue content this week to generate a quiz yet.</p></div>`;
+      return;
+    }
+    panel.innerHTML = `<div class="card" style="text-align:center;padding:30px 16px">
+      <h3 style="text-transform:none;font-size:16px;margin-bottom:8px">Week ${w.week} Quiz</h3>
+      <div style="font-size:13px;opacity:.75;margin-bottom:18px">${qs.length} question${qs.length===1?'':'s'} — vocabulary and fill-in-the-blank, generated from this week's content.</div>
+      <button class="continue-btn" id="startQuizBtn"><span>Start Quiz</span></button>
+    </div>`;
+    document.getElementById('startQuizBtn').onclick = () => {
+      QUIZ = {weekNum: w.week, questions: qs, pos: 0, correct: 0, answered: false, finished: false};
+      renderQuizQuestion(w);
+    };
+  }
+
+  function renderQuizQuestion(w){
+    const panel = document.getElementById('weekPanel');
+    if(!QUIZ || QUIZ.pos >= QUIZ.questions.length){
+      return renderQuizResult(w);
+    }
+    const q = QUIZ.questions[QUIZ.pos];
+    const total = QUIZ.questions.length;
+    panel.innerHTML = `
+      <div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.round((QUIZ.pos/total)*100)}%"></div></div>
+      <div class="card" style="margin-top:16px">
+        <div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Question ${QUIZ.pos+1} of ${total}${q.type==='fill' ? ' — Fill in the blank' : ''}</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;line-height:1.4;margin-bottom:18px">${escapeHtml(q.prompt)}</div>
+        <div id="quizOptions" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    `;
+    const optWrap = document.getElementById('quizOptions');
+    q.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'quiz-opt';
+      btn.textContent = opt;
+      btn.onclick = () => {
+        if(QUIZ.answered) return;
+        QUIZ.answered = true;
+        const correct = opt === q.answer;
+        if(correct) QUIZ.correct++;
+        Array.from(optWrap.children).forEach(b => {
+          b.disabled = true;
+          if(b.textContent === q.answer) b.classList.add('correct');
+          else if(b === btn) b.classList.add('wrong');
+        });
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'continue-btn';
+        nextBtn.style.marginTop = '14px';
+        nextBtn.innerHTML = '<span>' + (QUIZ.pos+1 < total ? 'Next' : 'See Results') + '</span>';
+        nextBtn.onclick = () => {
+          QUIZ.pos++;
+          QUIZ.answered = false;
+          renderQuizQuestion(w);
+        };
+        panel.querySelector('.card').appendChild(nextBtn);
+      };
+      optWrap.appendChild(btn);
+    });
+  }
+
+  function renderQuizResult(w){
+    QUIZ.finished = true;
+    const panel = document.getElementById('weekPanel');
+    const total = QUIZ.questions.length;
+    const correct = QUIZ.correct;
+    const pct = total > 0 ? Math.round((correct/total)*100) : 0;
+    panel.innerHTML = `
+      <div class="card" style="text-align:center;padding:30px 16px">
+        <h3 style="text-transform:none;font-size:18px;margin-bottom:6px">Quiz complete</h3>
+        <div style="font-size:28px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin:10px 0">${correct} / ${total}</div>
+        <div style="font-size:13px;opacity:.75">${pct}% correct</div>
+      </div>
+      <button class="continue-btn" id="retakeQuizBtn" style="margin-top:14px"><span>Retake Quiz</span></button>
+    `;
+    document.getElementById('retakeQuizBtn').onclick = () => { QUIZ = null; renderQuizTab(w); };
   }
 
   // ---------- boot ----------
