@@ -225,6 +225,21 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 .bottomnav .navbtn .ic{font-size:16px;line-height:1;}
 
 /* ---------- Flashcards ---------- */
+.dirtoggle-wrap{margin:0 0 18px;}
+.dirtoggle-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.6;margin-bottom:6px;}
+.dirtoggle{
+  position:relative;display:flex;background:var(--cream-dim);border:1.5px solid var(--ink);
+  border-radius:999px;padding:3px;height:40px;
+}
+.dirtoggle-thumb{
+  position:absolute;top:3px;left:3px;width:calc(50% - 3px);height:32px;
+  background:var(--burgundy);border-radius:999px;transition:transform .2s ease;
+}
+.dirtoggle-opt{
+  position:relative;z-index:1;flex:1;background:none;border:none;
+  font-size:12px;font-weight:700;color:var(--ink);border-radius:999px;
+}
+.dirtoggle-opt.active{color:#fff;}
 .fc-input{
   width:100%;margin-bottom:8px;padding:10px;
   border:1.5px solid var(--ink);border-radius:var(--radius);
@@ -318,13 +333,22 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   };
 
   // ---------- storage ----------
-  const STATE_DEFAULTS = {tasks:{}, notes:{}, lastWeek:null, lastTab:'days', collections:[], cards:[]};
+  const STATE_DEFAULTS = {tasks:{}, notes:{}, lastWeek:null, lastTab:'days', collections:[], cards:[], studyDirection:'de'};
+  function migrateCards(state){
+    state.cards = (state.cards||[]).map(c => {
+      if(c.de === undefined || c.en === undefined){
+        return {id: c.id, collectionId: c.collectionId, de: c.front||'', en: c.back||''};
+      }
+      return c;
+    });
+    return state;
+  }
   function loadState(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
       if(!raw) return Object.assign({}, STATE_DEFAULTS);
       const parsed = JSON.parse(raw);
-      return Object.assign({}, STATE_DEFAULTS, parsed);
+      return migrateCards(Object.assign({}, STATE_DEFAULTS, parsed));
     }catch(e){ return Object.assign({}, STATE_DEFAULTS); }
   }
   let STATE = loadState();
@@ -341,9 +365,9 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   function findCollectionByName(name){
     return getCollections().find(c => c.name.toLowerCase() === name.toLowerCase());
   }
-  function cardExistsInCollection(collectionId, front){
-    if(!collectionId || !front) return false;
-    return (STATE.cards||[]).some(c => c.collectionId === collectionId && c.front.trim().toLowerCase() === front.trim().toLowerCase());
+  function cardExistsInCollection(collectionId, deText){
+    if(!collectionId || !deText) return false;
+    return (STATE.cards||[]).some(c => c.collectionId === collectionId && (c.de||'').trim().toLowerCase() === deText.trim().toLowerCase());
   }
   function collectionCardCount(id){ return (STATE.cards||[]).filter(c => c.collectionId === id).length; }
   function getCardsFor(collectionIds){ return (STATE.cards||[]).filter(c => collectionIds.includes(c.collectionId)); }
@@ -372,16 +396,16 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     STATE.cards = (STATE.cards||[]).filter(c => c.collectionId !== id);
     saveState();
   }
-  function addCard(collectionId, front, back){
-    const card = {id: genId('card-'), collectionId, front: front.trim(), back: back.trim()};
+  function addCard(collectionId, de, en){
+    const card = {id: genId('card-'), collectionId, de: (de||'').trim(), en: (en||'').trim()};
     STATE.cards = STATE.cards || [];
     STATE.cards.push(card);
     saveState();
     return card;
   }
-  function updateCard(id, front, back){
+  function updateCard(id, de, en){
     const c = (STATE.cards||[]).find(c => c.id === id);
-    if(c){ c.front = front.trim(); c.back = back.trim(); saveState(); }
+    if(c){ c.de = (de||'').trim(); c.en = (en||'').trim(); saveState(); }
   }
   function deleteCard(id){
     STATE.cards = (STATE.cards||[]).filter(c => c.id !== id);
@@ -409,19 +433,66 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     if(idx === -1) return [cellText, ''];
     return [cellText.slice(0, idx).trim(), cellText.slice(idx+1).trim()];
   }
-  function conjFormsForRow(row){
-    const forms = [];
-    if(row[0]){ const [p, f] = splitPronounForm(row[0]); if(f) forms.push([p, f]); }
-    if(row[1]){ const [p, f] = splitPronounForm(row[1]); if(f) forms.push([p, f]); }
-    return forms;
+  function conjCardsForRow(row, meaning){
+    const cards = [];
+    [row[0], row[1]].forEach(cell => {
+      if(!cell) return;
+      const [p, f] = splitPronounForm(cell);
+      if(!f) return;
+      const de = p.charAt(0).toUpperCase() + p.slice(1) + ' ' + f;
+      const en = meaning ? englishConjugatedForm(meaning, p) : '';
+      cards.push({pronoun: p, de, en});
+    });
+    return cards;
   }
-  function rowAlreadyAdded(collectionId, row, conj){
+  function rowAlreadyAdded(collectionId, row, conj, meaning){
     if(!collectionId) return false;
     if(conj){
-      const forms = conjFormsForRow(row);
-      return forms.length > 0 && forms.every(([p]) => cardExistsInCollection(collectionId, p));
+      const cards = conjCardsForRow(row, meaning);
+      return cards.length > 0 && cards.every(c => cardExistsInCollection(collectionId, c.de));
     }
     return !!(row[0] && row[1]) && cardExistsInCollection(collectionId, row[0]);
+  }
+
+  // ---------- English conjugation glosses (for conjugation-table quick-add) ----------
+  const VERB_MEANING_BY_3SG = {
+    'ist': 'to be', 'hat': 'to have', 'möchte': 'would like', 'kann': 'can',
+    'wird': 'to become', 'würde': 'would', 'wohnt': 'to live',
+  };
+  const BE_FORMS = {ich:'am', du:'are', 'er/sie/es':'is', er:'is', sie:'is', es:'is', wir:'are', ihr:'are', Sie:'are', 'sie/Sie':'are'};
+  const HAVE_FORMS = {ich:'have', du:'have', 'er/sie/es':'has', er:'has', sie:'has', es:'has', wir:'have', ihr:'have', Sie:'have', 'sie/Sie':'have'};
+  const PRONOUN_LABEL = {
+    ich:'I', du:'you (singular)', er:'he', es:'it', sie:'they',
+    'er/sie/es':'he/she/it', wir:'we', ihr:'you (plural)', Sie:'you (formal)', 'sie/Sie':'they / you (formal)',
+  };
+  function isThirdSingularPronoun(p){
+    return p === 'er/sie/es' || p === 'er' || p === 'es';
+  }
+  function findVerbMeaning(rows){
+    for(const row of rows){
+      for(const cell of row){
+        if(!cell) continue;
+        const [p, f] = splitPronounForm(cell);
+        if(isThirdSingularPronoun(p) && VERB_MEANING_BY_3SG[f]) return VERB_MEANING_BY_3SG[f];
+      }
+    }
+    return null;
+  }
+  function englishThirdPersonS(base){
+    if(/(s|x|z|ch|sh)$/.test(base)) return base + 'es';
+    if(/[^aeiou]y$/.test(base)) return base.slice(0,-1) + 'ies';
+    return base + 's';
+  }
+  function englishConjugatedForm(meaning, pronoun){
+    const label = PRONOUN_LABEL[pronoun] || pronoun;
+    if(meaning === 'to be') return `${label} ${BE_FORMS[pronoun] || (isThirdSingularPronoun(pronoun) ? 'is' : 'are')}`;
+    if(meaning === 'to have') return `${label} ${HAVE_FORMS[pronoun] || (isThirdSingularPronoun(pronoun) ? 'has' : 'have')}`;
+    if(/^to\s+/.test(meaning)){
+      const base = meaning.replace(/^to\s+/, '');
+      const form = isThirdSingularPronoun(pronoun) ? englishThirdPersonS(base) : base;
+      return `${label} ${form}`;
+    }
+    return `${label} ${meaning}`;
   }
 
   // ---------- task id helpers ----------
@@ -727,12 +798,13 @@ table.vtable td:first-child{font-weight:600;width:52%;}
         html += `<div class="gtitle">${escapeHtml(g.title)}</div>`;
         if(g.rows && g.rows.length){
           const conj = isConjugationTable(g.rows);
+          const meaning = conj ? findVerbMeaning(g.rows) : null;
           const gcol = findCollectionByName(g.title);
           html += '<table class="gtable">' + g.rows.map((r, ri) => {
             const showBtn = conj ? !!(r[0] || r[1]) : !!(r[0] && r[1]);
             let btn = '';
             if(showBtn){
-              const already = gcol && rowAlreadyAdded(gcol.id, r, conj);
+              const already = gcol && rowAlreadyAdded(gcol.id, r, conj, meaning);
               btn = already
                 ? `<button class="vocab-add-btn" disabled>✓</button>`
                 : `<button class="vocab-add-btn" data-grow="${gi}:${ri}" title="Add to flashcards">+</button>`;
@@ -848,12 +920,13 @@ table.vtable td:first-child{font-weight:600;width:52%;}
           if(!row) return;
           const col = findOrCreateCollectionByName(g.title);
           const conj = isConjugationTable(g.rows);
-          if(rowAlreadyAdded(col.id, row, conj)){
+          const meaning = conj ? findVerbMeaning(g.rows) : null;
+          if(rowAlreadyAdded(col.id, row, conj, meaning)){
             btn.textContent = '✓'; btn.disabled = true; return;
           }
           let added = 0;
           if(conj){
-            conjFormsForRow(row).forEach(([p, f]) => { addCard(col.id, p, f); added++; });
+            conjCardsForRow(row, meaning).forEach(c => { addCard(col.id, c.de, c.en); added++; });
           } else if(row[0] && row[1]){
             addCard(col.id, row[0], row[1]);
             added++;
@@ -875,9 +948,18 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 
     const cols = getCollections();
     const totalCards = (STATE.cards||[]).length;
+    const dir = STATE.studyDirection || 'de';
 
     let html = `<div class="wrap">
       <div class="section-title" style="margin-top:6px">Flashcards</div>
+      <div class="dirtoggle-wrap">
+        <div class="dirtoggle-label">Study direction</div>
+        <div class="dirtoggle">
+          <div class="dirtoggle-thumb" style="transform:translateX(${dir==='en' ? '100%' : '0'})"></div>
+          <button class="dirtoggle-opt ${dir==='de'?'active':''}" data-dir="de">German front</button>
+          <button class="dirtoggle-opt ${dir==='en'?'active':''}" data-dir="en">English front</button>
+        </div>
+      </div>
       <button class="continue-btn" id="studyAllBtn" ${totalCards===0?'disabled':''}>
         <span>Study all collections
           <small>${totalCards} card${totalCards===1?'':'s'} total</small>
@@ -915,6 +997,13 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 
     view.innerHTML = html;
 
+    view.querySelectorAll('[data-dir]').forEach(btn => {
+      btn.onclick = () => {
+        STATE.studyDirection = btn.dataset.dir;
+        saveState();
+        renderFlashHome();
+      };
+    });
     document.getElementById('newColBtn').onclick = () => {
       const name = window.prompt('Collection name (e.g. "Week 1 Vocab")');
       if(!name || !name.trim()) return;
@@ -955,8 +1044,8 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     </button>`;
 
     html += `<div class="card" style="margin-top:16px"><h3>Add Card</h3>
-      <input type="text" id="cardFront" class="fc-input" placeholder="Front (e.g. German word/phrase)">
-      <input type="text" id="cardBack" class="fc-input" placeholder="Back (e.g. English meaning)">
+      <input type="text" id="cardFront" class="fc-input" placeholder="German">
+      <input type="text" id="cardBack" class="fc-input" placeholder="English">
       <button class="continue-btn" id="addCardBtn" style="padding:12px 16px"><span>Add Card</span></button>
     </div>`;
 
@@ -966,8 +1055,8 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     } else {
       cards.forEach(c => {
         html += `<div class="fc-card-row">
-          <div class="f">${escapeHtml(c.front)}</div>
-          <div class="b">${escapeHtml(c.back)}</div>
+          <div class="f">${escapeHtml(c.de)}</div>
+          <div class="b">${escapeHtml(c.en)}</div>
           <div class="actions">
             <button class="fc-smallbtn" data-edit="${c.id}">Edit</button>
             <button class="fc-smallbtn" data-del="${c.id}">Delete</button>
@@ -984,10 +1073,10 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     view.innerHTML = html;
 
     document.getElementById('addCardBtn').onclick = () => {
-      const front = document.getElementById('cardFront').value;
-      const back = document.getElementById('cardBack').value;
-      if(!front.trim() || !back.trim()) return;
-      addCard(col.id, front, back);
+      const de = document.getElementById('cardFront').value;
+      const en = document.getElementById('cardBack').value;
+      if(!de.trim() || !en.trim()) return;
+      addCard(col.id, de, en);
       openCollection(col.id);
     };
     const studyBtn = document.getElementById('studyColBtn');
@@ -997,11 +1086,11 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       btn.onclick = () => {
         const c = (STATE.cards||[]).find(x => x.id === btn.dataset.edit);
         if(!c) return;
-        const newFront = window.prompt('Front:', c.front);
-        if(newFront === null) return;
-        const newBack = window.prompt('Back:', c.back);
-        if(newBack === null) return;
-        updateCard(c.id, newFront, newBack);
+        const newDe = window.prompt('German:', c.de);
+        if(newDe === null) return;
+        const newEn = window.prompt('English:', c.en);
+        if(newEn === null) return;
+        updateCard(c.id, newDe, newEn);
         openCollection(col.id);
       };
     });
@@ -1080,6 +1169,11 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 
     const card = STUDY.queue[STUDY.pos];
     const cardCol = findCollection(card.collectionId);
+    const dir = STATE.studyDirection || 'de';
+    const frontText = dir === 'en' ? (card.en || card.de) : (card.de || card.en);
+    const backText = dir === 'en' ? (card.de || card.en) : (card.en || card.de);
+    const frontLabel = dir === 'en' ? 'English — tap to flip' : 'German — tap to flip';
+    const backLabel = dir === 'en' ? 'German' : 'English';
     document.getElementById('topSub').textContent =
       `Card ${STUDY.pos+1} of ${STUDY.queue.length}${STUDY.pass>1 ? ' — round '+STUDY.pass : ''}`;
 
@@ -1089,8 +1183,8 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       <div class="card study-card" id="studyCard">
         ${cardCol ? `<div class="coltag">${escapeHtml(cardCol.name)}</div>` : ''}
         <div>
-          <div class="lbl" id="studySideLabel">Front — tap to flip</div>
-          <div class="txt" id="studyCardText">${escapeHtml(card.front)}</div>
+          <div class="lbl" id="studySideLabel">${frontLabel}</div>
+          <div class="txt" id="studyCardText">${escapeHtml(frontText)}</div>
         </div>
       </div>
       <div class="study-answer-row hidden" id="studyAnswerBtns">
@@ -1104,8 +1198,8 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     document.getElementById('studyCard').onclick = () => {
       if(flipped) return;
       flipped = true;
-      document.getElementById('studySideLabel').textContent = 'Back';
-      document.getElementById('studyCardText').textContent = card.back;
+      document.getElementById('studySideLabel').textContent = backLabel;
+      document.getElementById('studyCardText').textContent = backText;
       document.getElementById('studyAnswerBtns').classList.remove('hidden');
     };
     document.getElementById('gotBtn').onclick = (e) => {
