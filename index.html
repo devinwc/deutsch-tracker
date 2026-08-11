@@ -250,7 +250,12 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 .vocab-add-btn:disabled{opacity:.5;}
 .study-card{
   margin-top:20px;min-height:170px;display:flex;align-items:center;justify-content:center;
-  text-align:center;cursor:pointer;padding:34px 16px;
+  text-align:center;cursor:pointer;padding:40px 16px 30px;position:relative;
+}
+.study-card .coltag{
+  position:absolute;top:10px;left:0;right:0;text-align:center;
+  font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--burgundy);opacity:.75;
 }
 .study-card .lbl{font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
 .study-card .txt{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:21px;line-height:1.4;}
@@ -333,6 +338,13 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   }
   function getCollections(){ return STATE.collections || []; }
   function findCollection(id){ return getCollections().find(c => c.id === id); }
+  function findCollectionByName(name){
+    return getCollections().find(c => c.name.toLowerCase() === name.toLowerCase());
+  }
+  function cardExistsInCollection(collectionId, front){
+    if(!collectionId || !front) return false;
+    return (STATE.cards||[]).some(c => c.collectionId === collectionId && c.front.trim().toLowerCase() === front.trim().toLowerCase());
+  }
   function collectionCardCount(id){ return (STATE.cards||[]).filter(c => c.collectionId === id).length; }
   function getCardsFor(collectionIds){ return (STATE.cards||[]).filter(c => collectionIds.includes(c.collectionId)); }
   function addCollection(name){
@@ -396,6 +408,20 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     const idx = cellText.lastIndexOf(' ');
     if(idx === -1) return [cellText, ''];
     return [cellText.slice(0, idx).trim(), cellText.slice(idx+1).trim()];
+  }
+  function conjFormsForRow(row){
+    const forms = [];
+    if(row[0]){ const [p, f] = splitPronounForm(row[0]); if(f) forms.push([p, f]); }
+    if(row[1]){ const [p, f] = splitPronounForm(row[1]); if(f) forms.push([p, f]); }
+    return forms;
+  }
+  function rowAlreadyAdded(collectionId, row, conj){
+    if(!collectionId) return false;
+    if(conj){
+      const forms = conjFormsForRow(row);
+      return forms.length > 0 && forms.every(([p]) => cardExistsInCollection(collectionId, p));
+    }
+    return !!(row[0] && row[1]) && cardExistsInCollection(collectionId, row[0]);
   }
 
   // ---------- task id helpers ----------
@@ -701,9 +727,16 @@ table.vtable td:first-child{font-weight:600;width:52%;}
         html += `<div class="gtitle">${escapeHtml(g.title)}</div>`;
         if(g.rows && g.rows.length){
           const conj = isConjugationTable(g.rows);
+          const gcol = findCollectionByName(g.title);
           html += '<table class="gtable">' + g.rows.map((r, ri) => {
             const showBtn = conj ? !!(r[0] || r[1]) : !!(r[0] && r[1]);
-            const btn = showBtn ? `<button class="vocab-add-btn" data-grow="${gi}:${ri}" title="Add to flashcards">+</button>` : '';
+            let btn = '';
+            if(showBtn){
+              const already = gcol && rowAlreadyAdded(gcol.id, r, conj);
+              btn = already
+                ? `<button class="vocab-add-btn" disabled>✓</button>`
+                : `<button class="vocab-add-btn" data-grow="${gi}:${ri}" title="Add to flashcards">+</button>`;
+            }
             return `<tr><td>${escapeHtml(r[0])}</td><td>${escapeHtml(r[1]||'')}</td><td style="width:28px;text-align:center">${btn}</td></tr>`;
           }).join('') + '</table>';
         }
@@ -716,9 +749,14 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 
   function renderVocabTab(w){
     let html = '<div class="card"><h3>Core Vocabulary</h3>';
-    html += '<table class="vtable">' + (w.vocab||[]).map((v,i) =>
-      `<tr><td>${escapeHtml(v[0])}</td><td>${escapeHtml(v[1])}</td><td style="width:34px;text-align:right"><button class="vocab-add-btn" data-vidx="${i}" title="Add to flashcards">+</button></td></tr>`
-    ).join('') + '</table>';
+    const vcol = findCollectionByName(`Week ${w.week}`);
+    html += '<table class="vtable">' + (w.vocab||[]).map((v,i) => {
+      const already = vcol && cardExistsInCollection(vcol.id, v[0]);
+      const btnHtml = already
+        ? `<button class="vocab-add-btn" disabled>✓</button>`
+        : `<button class="vocab-add-btn" data-vidx="${i}" title="Add to flashcards">+</button>`;
+      return `<tr><td>${escapeHtml(v[0])}</td><td>${escapeHtml(v[1])}</td><td style="width:34px;text-align:right">${btnHtml}</td></tr>`;
+    }).join('') + '</table>';
     if(w.vocabNote) html += `<div class="note-box" style="margin-top:12px">${escapeHtml(w.vocabNote)}</div>`;
     html += '</div>';
 
@@ -791,6 +829,9 @@ table.vtable td:first-child{font-weight:600;width:52%;}
           const pair = (w.vocab||[])[idx];
           if(!pair) return;
           const col = findOrCreateCollectionByName(`Week ${w.week}`);
+          if(cardExistsInCollection(col.id, pair[0])){
+            btn.textContent = '✓'; btn.disabled = true; return;
+          }
           addCard(col.id, pair[0], pair[1]);
           btn.textContent = '✓';
           btn.disabled = true;
@@ -807,10 +848,12 @@ table.vtable td:first-child{font-weight:600;width:52%;}
           if(!row) return;
           const col = findOrCreateCollectionByName(g.title);
           const conj = isConjugationTable(g.rows);
+          if(rowAlreadyAdded(col.id, row, conj)){
+            btn.textContent = '✓'; btn.disabled = true; return;
+          }
           let added = 0;
           if(conj){
-            if(row[0]){ const [p, f] = splitPronounForm(row[0]); if(f){ addCard(col.id, p, f); added++; } }
-            if(row[1]){ const [p, f] = splitPronounForm(row[1]); if(f){ addCard(col.id, p, f); added++; } }
+            conjFormsForRow(row).forEach(([p, f]) => { addCard(col.id, p, f); added++; });
           } else if(row[0] && row[1]){
             addCard(col.id, row[0], row[1]);
             added++;
@@ -1036,6 +1079,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     }
 
     const card = STUDY.queue[STUDY.pos];
+    const cardCol = findCollection(card.collectionId);
     document.getElementById('topSub').textContent =
       `Card ${STUDY.pos+1} of ${STUDY.queue.length}${STUDY.pass>1 ? ' — round '+STUDY.pass : ''}`;
 
@@ -1043,6 +1087,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     let html = `<div class="panel">
       <div class="progress-bar"><div class="progress-bar-fill" style="width:${Math.round((STUDY.pos/STUDY.queue.length)*100)}%"></div></div>
       <div class="card study-card" id="studyCard">
+        ${cardCol ? `<div class="coltag">${escapeHtml(cardCol.name)}</div>` : ''}
         <div>
           <div class="lbl" id="studySideLabel">Front — tap to flip</div>
           <div class="txt" id="studyCardText">${escapeHtml(card.front)}</div>
