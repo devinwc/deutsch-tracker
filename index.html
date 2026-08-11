@@ -383,6 +383,21 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     return arr;
   }
 
+  // ---------- grammar-table conjugation detection ----------
+  const PRONOUN_RE = /^(er\/sie\/es|sie\/Sie|ich|du|er|sie|es|wir|ihr|Sie)\b/;
+  function isPronounCell(text){
+    return !!text && PRONOUN_RE.test(text.trim());
+  }
+  function isConjugationTable(rows){
+    if(!rows || rows.length === 0) return false;
+    return rows.every(r => (!r[0] || isPronounCell(r[0])) && (!r[1] || isPronounCell(r[1])));
+  }
+  function splitPronounForm(cellText){
+    const idx = cellText.lastIndexOf(' ');
+    if(idx === -1) return [cellText, ''];
+    return [cellText.slice(0, idx).trim(), cellText.slice(idx+1).trim()];
+  }
+
   // ---------- task id helpers ----------
   function dayTaskId(week, dayIdx, taskIdx){ return `w${week}-d${dayIdx}-t${taskIdx}`; }
   function speakTaskId(week, idx){ return `w${week}-speak-${idx}`; }
@@ -682,12 +697,15 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 
     if((w.grammar||[]).length){
       html += '<div class="card"><h3>Grammar You Need This Week</h3>';
-      w.grammar.forEach(g => {
+      w.grammar.forEach((g, gi) => {
         html += `<div class="gtitle">${escapeHtml(g.title)}</div>`;
         if(g.rows && g.rows.length){
-          html += '<table class="gtable">' + g.rows.map(r =>
-            `<tr><td>${escapeHtml(r[0])}</td><td>${escapeHtml(r[1]||'')}</td></tr>`
-          ).join('') + '</table>';
+          const conj = isConjugationTable(g.rows);
+          html += '<table class="gtable">' + g.rows.map((r, ri) => {
+            const showBtn = conj ? !!(r[0] || r[1]) : !!(r[0] && r[1]);
+            const btn = showBtn ? `<button class="vocab-add-btn" data-grow="${gi}:${ri}" title="Add to flashcards">+</button>` : '';
+            return `<tr><td>${escapeHtml(r[0])}</td><td>${escapeHtml(r[1]||'')}</td><td style="width:28px;text-align:center">${btn}</td></tr>`;
+          }).join('') + '</table>';
         }
       });
       if(w.grammarNote) html += `<div class="note-box">${escapeHtml(w.grammarNote)}</div>`;
@@ -775,6 +793,29 @@ table.vtable td:first-child{font-weight:600;width:52%;}
           const col = findOrCreateCollectionByName(`Week ${w.week}`);
           addCard(col.id, pair[0], pair[1]);
           btn.textContent = '✓';
+          btn.disabled = true;
+        };
+      });
+    }
+    if(tab === 'resources'){
+      document.getElementById('weekPanel').querySelectorAll('[data-grow]').forEach(btn => {
+        btn.onclick = () => {
+          const [giStr, riStr] = btn.dataset.grow.split(':');
+          const gi = parseInt(giStr, 10), ri = parseInt(riStr, 10);
+          const g = (w.grammar||[])[gi];
+          const row = g && g.rows && g.rows[ri];
+          if(!row) return;
+          const col = findOrCreateCollectionByName(g.title);
+          const conj = isConjugationTable(g.rows);
+          let added = 0;
+          if(conj){
+            if(row[0]){ const [p, f] = splitPronounForm(row[0]); if(f){ addCard(col.id, p, f); added++; } }
+            if(row[1]){ const [p, f] = splitPronounForm(row[1]); if(f){ addCard(col.id, p, f); added++; } }
+          } else if(row[0] && row[1]){
+            addCard(col.id, row[0], row[1]);
+            added++;
+          }
+          btn.textContent = added > 1 ? '✓✓' : '✓';
           btn.disabled = true;
         };
       });
