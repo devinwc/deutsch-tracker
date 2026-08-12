@@ -95,6 +95,10 @@ a{color:inherit;}
   display:flex;align-items:center;gap:14px;
 }
 .phase-card.locked{opacity:.55;}
+.phase-card.collrow{padding:12px 14px;}
+.collrow-actions{display:flex;gap:8px;flex-shrink:0;}
+.collrow-actions .fc-smallbtn{padding:8px 14px;font-size:11.5px;}
+.collrow-actions .fc-smallbtn:disabled{opacity:.4;}
 .phase-shape{width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .phase-meta{flex:1;}
 .phase-meta .num{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.6;}
@@ -975,13 +979,16 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       cols.forEach(c => {
         const n = collectionCardCount(c.id);
         html += `
-          <button class="phase-card" data-col="${c.id}">
+          <div class="phase-card collrow">
             <div class="phase-meta">
               <div class="title">${escapeHtml(c.name)}</div>
               <div class="weeks">${n} card${n===1?'':'s'}</div>
             </div>
-            <div class="phase-pct">›</div>
-          </button>`;
+            <div class="collrow-actions">
+              <button class="fc-smallbtn" data-study="${c.id}" ${n===0?'disabled':''}>Study</button>
+              <button class="fc-smallbtn" data-editcol="${c.id}">Edit</button>
+            </div>
+          </div>`;
       });
       html += `</div>`;
     }
@@ -1014,8 +1021,11 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     if(studyAllBtn && totalCards>0) studyAllBtn.onclick = () => startStudySession(cols.map(c=>c.id));
     const studyPickBtn = document.getElementById('studyPickBtn');
     if(studyPickBtn && cols.length>=2) studyPickBtn.onclick = () => renderStudyPicker();
-    view.querySelectorAll('[data-col]').forEach(btn => {
-      btn.onclick = () => openCollection(btn.dataset.col);
+    view.querySelectorAll('[data-study]').forEach(btn => {
+      btn.onclick = () => startStudySession([btn.dataset.study]);
+    });
+    view.querySelectorAll('[data-editcol]').forEach(btn => {
+      btn.onclick = () => openCollection(btn.dataset.editcol);
     });
   }
 
