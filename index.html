@@ -267,6 +267,13 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   font-size:11px;font-weight:700;border-radius:var(--radius);line-height:1;
 }
 .vocab-add-btn:disabled{opacity:.5;}
+.speak-btn{
+  border:none;background:none;padding:2px 6px;font-size:15px;line-height:1;
+  cursor:pointer;color:var(--ink);opacity:.75;
+}
+.speak-btn:hover{opacity:1;}
+.speak-btn.playing{opacity:1;animation:speakPulse .8s ease-in-out infinite;}
+@keyframes speakPulse{0%,100%{opacity:.5;}50%{opacity:1;}}
 .study-card{
   margin-top:20px;min-height:170px;display:flex;align-items:center;justify-content:center;
   text-align:center;cursor:pointer;padding:40px 16px 30px;position:relative;
@@ -739,6 +746,91 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // ---------- audio pronunciations (ElevenLabs pre-generated, browser TTS fallback) ----------
+  let AUDIO_MANIFEST = null; // Map: German text -> filename, once loaded
+  let currentAudioEl = null;
+  let currentPlayBtn = null;
+
+  function loadAudioManifest(){
+    fetch('./audio/manifest.json')
+      .then(r => r.ok ? r.json() : [])
+      .then(list => {
+        AUDIO_MANIFEST = new Map();
+        (list || []).forEach(entry => AUDIO_MANIFEST.set(entry.text, entry.filename));
+      })
+      .catch(() => { AUDIO_MANIFEST = new Map(); }); // no audio folder deployed yet — fallback still works
+  }
+
+  function stopCurrentAudio(){
+    if(currentAudioEl){ currentAudioEl.pause(); currentAudioEl = null; }
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+    if(currentPlayBtn){ currentPlayBtn.classList.remove('playing'); currentPlayBtn = null; }
+  }
+
+  function playGerman(text, btn){
+    if(!text) return;
+    const alreadyPlayingThis = currentPlayBtn === btn;
+    stopCurrentAudio();
+    if(alreadyPlayingThis) return; // tapping the same button again just stops it
+
+    const filename = AUDIO_MANIFEST && AUDIO_MANIFEST.get(text);
+    if(btn){ btn.classList.add('playing'); currentPlayBtn = btn; }
+
+    if(filename){
+      const audio = new Audio('./audio/' + filename);
+      currentAudioEl = audio;
+      audio.onended = () => { if(currentPlayBtn === btn){ btn.classList.remove('playing'); currentPlayBtn = null; } currentAudioEl = null; };
+      audio.onerror = () => { // clip missing/failed to load — fall back to browser TTS
+        currentAudioEl = null;
+        speakWithBrowserTTS(text, btn);
+      };
+      audio.play().catch(() => { currentAudioEl = null; speakWithBrowserTTS(text, btn); });
+    } else {
+      speakWithBrowserTTS(text, btn);
+    }
+  }
+
+  function speakWithBrowserTTS(text, btn){
+    if(!window.speechSynthesis){ if(btn){ btn.classList.remove('playing'); } currentPlayBtn = null; return; }
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'de-DE';
+    const germanVoice = getGermanVoice();
+    if(germanVoice) utter.voice = germanVoice;
+    utter.onend = () => { if(currentPlayBtn === btn){ btn.classList.remove('playing'); currentPlayBtn = null; } };
+    utter.onerror = () => { if(currentPlayBtn === btn){ btn.classList.remove('playing'); currentPlayBtn = null; } };
+    window.speechSynthesis.speak(utter);
+  }
+
+  // ---------- pick an actual German voice, not just a lang hint ----------
+  // Setting utter.lang alone doesn't reliably select a German voice on every
+  // browser — if voices haven't loaded yet or none match, it silently falls
+  // back to the default (often English) voice. Explicitly finding and
+  // assigning a German SpeechSynthesisVoice fixes that.
+  let cachedVoices = null;
+  function refreshVoiceCache(){
+    const list = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+    if(list && list.length) cachedVoices = list;
+  }
+  if(window.speechSynthesis){
+    refreshVoiceCache();
+    // Chrome/Firefox load voices asynchronously; this fires once they're ready.
+    window.speechSynthesis.onvoiceschanged = refreshVoiceCache;
+  }
+  function getGermanVoice(){
+    refreshVoiceCache(); // cheap call; picks up voices if they've since loaded
+    if(!cachedVoices || !cachedVoices.length) return null;
+    const germanVoices = cachedVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
+    if(!germanVoices.length) return null;
+    // prefer exact de-DE, then any local/non-network voice, then whatever's first
+    return germanVoices.find(v => v.lang.toLowerCase() === 'de-de')
+      || germanVoices.find(v => v.localService)
+      || germanVoices[0];
+  }
+
+  function speakBtnHtml(dataAttr){
+    return `<button class="speak-btn" ${dataAttr} title="Play pronunciation">🔊</button>`;
+  }
+
   function renderTabPanel(w, tab){
     const panel = document.getElementById('weekPanel');
     if(tab === 'days'){ panel.innerHTML = renderDaysTab(w); wireInteractive(w, tab); }
@@ -813,7 +905,10 @@ table.vtable td:first-child{font-weight:600;width:52%;}
                 ? `<button class="vocab-add-btn" disabled>✓</button>`
                 : `<button class="vocab-add-btn" data-grow="${gi}:${ri}" title="Add to flashcards">+</button>`;
             }
-            return `<tr><td>${escapeHtml(r[0])}</td><td>${escapeHtml(r[1]||'')}</td><td style="width:28px;text-align:center">${btn}</td></tr>`;
+            // audio only exists for conjugation-table cells (that's what the extraction script pulled)
+            const cell0 = conj && r[0] ? speakBtnHtml(`data-speak-grow="${gi}:${ri}:0"`) : '';
+            const cell1 = conj && r[1] ? speakBtnHtml(`data-speak-grow="${gi}:${ri}:1"`) : '';
+            return `<tr><td>${cell0}${escapeHtml(r[0])}</td><td>${cell1}${escapeHtml(r[1]||'')}</td><td style="width:28px;text-align:center">${btn}</td></tr>`;
           }).join('') + '</table>';
         }
       });
@@ -831,14 +926,14 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       const btnHtml = already
         ? `<button class="vocab-add-btn" disabled>✓</button>`
         : `<button class="vocab-add-btn" data-vidx="${i}" title="Add to flashcards">+</button>`;
-      return `<tr><td>${escapeHtml(v[0])}</td><td>${escapeHtml(v[1])}</td><td style="width:34px;text-align:right">${btnHtml}</td></tr>`;
+      return `<tr><td>${speakBtnHtml(`data-speak-vidx="${i}"`)}${escapeHtml(v[0])}</td><td>${escapeHtml(v[1])}</td><td style="width:34px;text-align:right">${btnHtml}</td></tr>`;
     }).join('') + '</table>';
     if(w.vocabNote) html += `<div class="note-box" style="margin-top:12px">${escapeHtml(w.vocabNote)}</div>`;
     html += '</div>';
 
     html += '<div class="card"><h3>Practice Dialogue</h3>';
-    (w.dialogue||[]).forEach(line => {
-      html += `<div class="dialogue-line"><b>${escapeHtml(line[0])}:</b> ${escapeHtml(line[1])}</div>`;
+    (w.dialogue||[]).forEach((line, i) => {
+      html += `<div class="dialogue-line">${speakBtnHtml(`data-speak-didx="${i}"`)}<b>${escapeHtml(line[0])}:</b> ${escapeHtml(line[1])}</div>`;
     });
     html += '</div>';
     return html;
@@ -913,6 +1008,20 @@ table.vtable td:first-child{font-weight:600;width:52%;}
           btn.disabled = true;
         };
       });
+      document.getElementById('weekPanel').querySelectorAll('[data-speak-vidx]').forEach(btn => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.dataset.speakVidx, 10);
+          const pair = (w.vocab||[])[idx];
+          if(pair) playGerman(pair[0], btn);
+        };
+      });
+      document.getElementById('weekPanel').querySelectorAll('[data-speak-didx]').forEach(btn => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.dataset.speakDidx, 10);
+          const line = (w.dialogue||[])[idx];
+          if(line) playGerman(line[1], btn);
+        };
+      });
     }
     if(tab === 'resources'){
       document.getElementById('weekPanel').querySelectorAll('[data-grow]').forEach(btn => {
@@ -937,6 +1046,22 @@ table.vtable td:first-child{font-weight:600;width:52%;}
           }
           btn.textContent = added > 1 ? '✓✓' : '✓';
           btn.disabled = true;
+        };
+      });
+      document.getElementById('weekPanel').querySelectorAll('[data-speak-grow]').forEach(btn => {
+        btn.onclick = () => {
+          const [giStr, riStr, cellStr] = btn.dataset.speakGrow.split(':');
+          const gi = parseInt(giStr, 10), ri = parseInt(riStr, 10), cellIdx = parseInt(cellStr, 10);
+          const g = (w.grammar||[])[gi];
+          const row = g && g.rows && g.rows[ri];
+          const cell = row && row[cellIdx];
+          if(!cell) return;
+          const meaning = findVerbMeaning(g.rows);
+          const cards = conjCardsForRow(row, meaning);
+          const card = cards[cellIdx === 0 ? 0 : cards.length - 1];
+          // conjCardsForRow only pushes cards for non-empty cells, so with two non-empty
+          // cells cards[0] is cell0's card and cards[1] (== last) is cell1's
+          if(card) playGerman(card.de, btn);
         };
       });
     }
@@ -1184,6 +1309,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     const backText = dir === 'en' ? (card.de || card.en) : (card.en || card.de);
     const frontLabel = dir === 'en' ? 'English — tap to flip' : 'German — tap to flip';
     const backLabel = dir === 'en' ? 'German' : 'English';
+    const frontIsGerman = dir !== 'en';
     document.getElementById('topSub').textContent =
       `Card ${STUDY.pos+1} of ${STUDY.queue.length}${STUDY.pass>1 ? ' — round '+STUDY.pass : ''}`;
 
@@ -1194,7 +1320,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
         ${cardCol ? `<div class="coltag">${escapeHtml(cardCol.name)}</div>` : ''}
         <div>
           <div class="lbl" id="studySideLabel">${frontLabel}</div>
-          <div class="txt" id="studyCardText">${escapeHtml(frontText)}</div>
+          <div class="txt" id="studyCardText">${frontIsGerman ? speakBtnHtml('id="studySpeakBtn"') : ''}${escapeHtml(frontText)}</div>
         </div>
       </div>
       <div class="study-answer-row hidden" id="studyAnswerBtns">
@@ -1204,12 +1330,21 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     </div>`;
     view.innerHTML = html;
 
+    function wireStudySpeakBtn(isGermanSide, text){
+      const btn = document.getElementById('studySpeakBtn');
+      if(!btn) return;
+      btn.onclick = (e) => { e.stopPropagation(); playGerman(text, btn); };
+    }
+    wireStudySpeakBtn(frontIsGerman, frontIsGerman ? frontText : backText);
+
     let flipped = false;
     document.getElementById('studyCard').onclick = () => {
       if(flipped) return;
       flipped = true;
+      stopCurrentAudio();
       document.getElementById('studySideLabel').textContent = backLabel;
-      document.getElementById('studyCardText').textContent = backText;
+      document.getElementById('studyCardText').innerHTML = (!frontIsGerman ? speakBtnHtml('id="studySpeakBtn"') : '') + escapeHtml(backText);
+      wireStudySpeakBtn(!frontIsGerman, backText);
       document.getElementById('studyAnswerBtns').classList.remove('hidden');
     };
     document.getElementById('gotBtn').onclick = (e) => {
@@ -1399,6 +1534,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   }
 
   // ---------- boot ----------
+  loadAudioManifest();
   showSection('curriculum');
   document.querySelectorAll('#bottomNav .navbtn').forEach(btn => {
     btn.onclick = () => showSection(btn.dataset.section);
