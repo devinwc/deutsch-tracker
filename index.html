@@ -173,6 +173,52 @@ a{color:inherit;}
 }
 .task label{flex:1;}
 .task.checked label{opacity:.5;text-decoration:line-through;}
+.record-task-btn{
+  border:1.5px solid var(--ink);background:none;border-radius:50%;
+  width:26px;height:26px;flex-shrink:0;font-size:13px;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  position:relative;
+}
+.rec-badge{
+  position:absolute;top:-4px;right:-4px;background:var(--burgundy);color:#fff;
+  border-radius:50%;font-size:9px;min-width:14px;height:14px;padding:0 2px;
+  display:none;align-items:center;justify-content:center;font-weight:700;
+}
+
+.recorder-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.recorder-modal{
+  background:var(--cream);border:1.5px solid var(--ink);border-radius:var(--radius);
+  padding:20px;max-width:360px;width:100%;text-align:center;
+}
+.recorder-modal .rec-task{font-size:12.5px;opacity:.75;margin-bottom:16px;line-height:1.4;}
+.recorder-modal .rec-mic{
+  width:72px;height:72px;border-radius:50%;border:1.5px solid var(--ink);
+  background:var(--burgundy);color:#fff;font-size:28px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 14px;cursor:pointer;
+}
+.recorder-modal .rec-mic.recording{animation:recPulse 1.2s ease-in-out infinite;}
+@keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(122,32,42,.4);}50%{box-shadow:0 0 0 12px rgba(122,32,42,0);}}
+.recorder-modal .rec-timer{font-size:15px;font-variant-numeric:tabular-nums;margin-bottom:14px;min-height:20px;}
+.recorder-modal .rec-status{font-size:12.5px;opacity:.7;margin-bottom:10px;min-height:16px;}
+.recorder-modal audio{width:100%;margin-bottom:14px;}
+.recorder-modal .rec-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.recorder-modal .rec-actions button{flex:1;min-width:100px;}
+.rec-takes-list{margin:0 0 16px;text-align:left;max-height:180px;overflow-y:auto;}
+.rec-takes-list .rec-take-row{
+  display:flex;align-items:center;gap:8px;padding:7px 0;
+  border-bottom:1px solid rgba(0,0,0,.1);font-size:12px;
+}
+.rec-takes-list .rec-take-row audio{flex:1;height:32px;margin:0;}
+.rec-takes-list .rec-take-meta{flex-shrink:0;opacity:.7;font-size:11px;}
+.rec-takes-list .rec-take-del{
+  border:none;background:none;cursor:pointer;font-size:14px;flex-shrink:0;opacity:.6;
+}
+.rec-takes-list .rec-take-del:hover{opacity:1;}
+.rec-takes-heading{font-size:11px;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin-bottom:6px;text-align:left;}
 
 .card{
   border:1.5px solid var(--ink);border-radius:var(--radius);
@@ -831,6 +877,241 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     return `<button class="speak-btn" ${dataAttr} title="Play pronunciation">🔊</button>`;
   }
 
+  function recordBtnHtml(dataAttr){
+    return `<button class="record-task-btn" ${dataAttr} title="Record yourself">🎙️<span class="rec-badge"></span></button>`;
+  }
+
+  function looksLikeRecordTask(text){
+    return /\brecord/i.test(text || '');
+  }
+
+  // ---------- recordings database (IndexedDB — stores actual audio blobs, persists across reloads) ----------
+  let recDbPromise = null;
+  function openRecDb(){
+    if(recDbPromise) return recDbPromise;
+    recDbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open('deutsch-tracker-recordings', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if(!db.objectStoreNames.contains('takes')){
+          const store = db.createObjectStore('takes', { keyPath: 'id', autoIncrement: true });
+          store.createIndex('byTaskKey', 'taskKey', { unique: false });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    return recDbPromise;
+  }
+
+  async function saveTake(taskKey, taskText, week, blob, mimeType){
+    const db = await openRecDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('takes', 'readwrite');
+      tx.objectStore('takes').add({ taskKey, taskText, week, blob, mimeType, createdAt: Date.now() });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function getTakesForTask(taskKey){
+    const db = await openRecDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('takes', 'readonly');
+      const req = tx.objectStore('takes').index('byTaskKey').getAll(taskKey);
+      req.onsuccess = () => resolve((req.result || []).sort((a, b) => b.createdAt - a.createdAt));
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function deleteTake(id){
+    const db = await openRecDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('takes', 'readwrite');
+      tx.objectStore('takes').delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  function formatTakeTimestamp(ts){
+    const d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  // updates the small count badge on each 🎙️ button after the takes are known (async, fire-and-forget)
+  async function refreshRecordBadges(w){
+    const btns = document.querySelectorAll('#weekPanel [data-record-day], #weekPanel [data-record-speak]');
+    for(const btn of btns){
+      let taskKey;
+      if(btn.dataset.recordDay){
+        const [di, ti] = btn.dataset.recordDay.split(':');
+        taskKey = `d${w.week}:${di}:${ti}`;
+      } else {
+        taskKey = `s${w.week}:${btn.dataset.recordSpeak}`;
+      }
+      try{
+        const takes = await getTakesForTask(taskKey);
+        const badge = btn.querySelector('.rec-badge');
+        if(badge && takes.length){
+          badge.textContent = takes.length;
+          badge.style.display = 'flex';
+        }
+      } catch(e){ /* IndexedDB unavailable — badges just stay hidden */ }
+    }
+  }
+
+  // ---------- in-app voice recorder ----------
+  // Lets you record + immediately play back a speaking task, right in the app,
+  // instead of needing to open Voice Memos separately. Session-only by design —
+  // nothing is saved unless you tap Download.
+  let recStream = null;
+  let recRecorder = null;
+  let recChunks = [];
+  let recTimerInterval = null;
+  let recStartedAt = null;
+  let recBlobUrl = null;
+
+  function formatRecTime(ms){
+    const s = Math.floor(ms/1000);
+    return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  }
+
+  function closeRecorder(skipBadgeRefresh){
+    if(recRecorder && recRecorder.state !== 'inactive') recRecorder.stop();
+    if(recStream) recStream.getTracks().forEach(t => t.stop());
+    if(recTimerInterval) clearInterval(recTimerInterval);
+    if(recBlobUrl) URL.revokeObjectURL(recBlobUrl);
+    recStream = null; recRecorder = null; recChunks = []; recTimerInterval = null; recBlobUrl = null;
+    const overlay = document.getElementById('recorderOverlay');
+    if(overlay) overlay.remove();
+    // takes list may have changed (new recording / deletion) — refresh the 🎙️ badges behind the modal
+    if(!skipBadgeRefresh && window.CURRENT_WEEK) refreshRecordBadges(window.CURRENT_WEEK);
+  }
+
+  async function renderTakesList(taskKey){
+    const wrap = document.getElementById('recTakesWrap');
+    if(!wrap) return;
+    let takes = [];
+    try{ takes = await getTakesForTask(taskKey); } catch(e){ /* ignore */ }
+    if(!takes.length){ wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `<div class="rec-takes-heading">Previous takes (${takes.length})</div>
+      <div class="rec-takes-list">${takes.map(t => {
+        const url = URL.createObjectURL(t.blob);
+        return `<div class="rec-take-row" data-take-id="${t.id}">
+          <span class="rec-take-meta">${formatTakeTimestamp(t.createdAt)}</span>
+          <audio controls src="${url}"></audio>
+          <button class="rec-take-del" data-dl-take="${t.id}" title="Download this take">⬇️</button>
+          <button class="rec-take-del" data-del-take="${t.id}" title="Delete this take">🗑️</button>
+        </div>`;
+      }).join('')}</div>`;
+    wrap.querySelectorAll('[data-dl-take]').forEach(btn => {
+      btn.onclick = () => {
+        const id = parseInt(btn.dataset.dlTake, 10);
+        const take = takes.find(t => t.id === id);
+        if(!take) return;
+        const url = URL.createObjectURL(take.blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const ext = (take.mimeType || '').includes('mp4') ? 'm4a' : 'webm';
+        a.download = `deutsch-recording-${take.id}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      };
+    });
+    wrap.querySelectorAll('[data-del-take]').forEach(btn => {
+      btn.onclick = async () => {
+        await deleteTake(parseInt(btn.dataset.delTake, 10));
+        renderTakesList(taskKey);
+      };
+    });
+  }
+
+  function openRecorder(taskText, taskKey, week){
+    closeRecorder(true); // in case one's already open somehow; skip badge refresh, we're about to reopen anyway
+    window.CURRENT_WEEK = week;
+    const overlay = document.createElement('div');
+    overlay.className = 'recorder-overlay';
+    overlay.id = 'recorderOverlay';
+    overlay.innerHTML = `
+      <div class="recorder-modal">
+        <div class="rec-task">${escapeHtml(taskText)}</div>
+        <div id="recTakesWrap"></div>
+        <div class="rec-mic" id="recMicBtn">🎙️</div>
+        <div class="rec-timer" id="recTimer"></div>
+        <div class="rec-status" id="recStatus">Tap the mic to start recording</div>
+        <div id="recPlaybackWrap"></div>
+        <div class="rec-actions" id="recActions">
+          <button class="continue-btn" id="recCloseBtn" style="background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)"><span>Close</span></button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = (e) => { if(e.target === overlay) closeRecorder(); };
+    document.getElementById('recCloseBtn').onclick = closeRecorder;
+    renderTakesList(taskKey);
+
+    const micBtn = document.getElementById('recMicBtn');
+    const statusEl = document.getElementById('recStatus');
+    const timerEl = document.getElementById('recTimer');
+
+    micBtn.onclick = async () => {
+      if(recRecorder && recRecorder.state === 'recording'){
+        recRecorder.stop();
+        return;
+      }
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        statusEl.textContent = "This browser doesn't support in-app recording.";
+        return;
+      }
+      try{
+        statusEl.textContent = 'Requesting microphone access…';
+        recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch(err){
+        statusEl.textContent = 'Microphone permission denied — allow it in your browser settings to record.';
+        return;
+      }
+      recChunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
+      recRecorder = mimeType ? new MediaRecorder(recStream, { mimeType }) : new MediaRecorder(recStream);
+      recRecorder.ondataavailable = (e) => { if(e.data && e.data.size > 0) recChunks.push(e.data); };
+      recRecorder.onstop = async () => {
+        if(recTimerInterval) clearInterval(recTimerInterval);
+        recStream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(recChunks, { type: recRecorder.mimeType || 'audio/webm' });
+        recBlobUrl = URL.createObjectURL(blob);
+        micBtn.classList.remove('recording');
+        micBtn.textContent = '🎙️';
+        timerEl.textContent = '';
+
+        try{
+          await saveTake(taskKey, taskText, week, blob, recRecorder.mimeType || 'audio/webm');
+          statusEl.textContent = 'Saved. Record another take, or close.';
+          await renderTakesList(taskKey); // refresh the list — the new one now appears at top
+          document.getElementById('recPlaybackWrap').innerHTML = '';
+        } catch(err){
+          statusEl.textContent = "Couldn't save — listen back below, or download it.";
+          document.getElementById('recPlaybackWrap').innerHTML = `<audio controls src="${recBlobUrl}"></audio>`;
+        }
+
+        document.getElementById('recActions').innerHTML = `
+          <button class="continue-btn" id="recAgainBtn" style="background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)"><span>Record again</span></button>
+          <button class="continue-btn" id="recCloseBtn2" style="background:var(--green)"><span>Done</span></button>`;
+        document.getElementById('recAgainBtn').onclick = () => openRecorder(taskText, taskKey, week);
+        document.getElementById('recCloseBtn2').onclick = closeRecorder;
+      };
+      recRecorder.start();
+      recStartedAt = Date.now();
+      micBtn.classList.add('recording');
+      micBtn.textContent = '⏹️';
+      statusEl.textContent = 'Recording — tap again to stop';
+      recTimerInterval = setInterval(() => {
+        timerEl.textContent = formatRecTime(Date.now() - recStartedAt);
+      }, 250);
+    };
+  }
+
   function renderTabPanel(w, tab){
     const panel = document.getElementById('weekPanel');
     if(tab === 'days'){ panel.innerHTML = renderDaysTab(w); wireInteractive(w, tab); }
@@ -854,9 +1135,11 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       d.tasks.forEach((t, ti) => {
         const id = dayTaskId(w.week, di, ti);
         const checked = !!STATE.tasks[id];
+        const recBtn = looksLikeRecordTask(t) ? recordBtnHtml(`data-record-day="${di}:${ti}"`) : '';
         html += `<div class="task ${checked?'checked':''}">
           <input type="checkbox" id="${id}" data-id="${id}" ${checked?'checked':''}>
           <label for="${id}">${escapeHtml(t)}</label>
+          ${recBtn}
         </div>`;
       });
       html += `</div></div>`;
@@ -944,9 +1227,11 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     (w.speaking||[]).forEach((t, i) => {
       const id = speakTaskId(w.week, i);
       const checked = !!STATE.tasks[id];
+      const recBtn = looksLikeRecordTask(t) ? recordBtnHtml(`data-record-speak="${i}"`) : '';
       html += `<div class="task ${checked?'checked':''}">
         <input type="checkbox" id="${id}" data-id="${id}" ${checked?'checked':''}>
         <label for="${id}">${escapeHtml(t)}</label>
+        ${recBtn}
       </div>`;
     });
     html += '</div>';
@@ -982,6 +1267,21 @@ table.vtable td:first-child{font-weight:600;width:52%;}
         renderTabPanel(w, tab);
       };
     });
+    document.getElementById('weekPanel').querySelectorAll('[data-record-day]').forEach(btn => {
+      btn.onclick = () => {
+        const [di, ti] = btn.dataset.recordDay.split(':').map(n => parseInt(n, 10));
+        const task = w.days[di] && w.days[di].tasks[ti];
+        if(task) openRecorder(task, `d${w.week}:${di}:${ti}`, w.week);
+      };
+    });
+    document.getElementById('weekPanel').querySelectorAll('[data-record-speak]').forEach(btn => {
+      btn.onclick = () => {
+        const i = parseInt(btn.dataset.recordSpeak, 10);
+        const task = (w.speaking || [])[i];
+        if(task) openRecorder(task, `s${w.week}:${i}`, w.week);
+      };
+    });
+    refreshRecordBadges(w);
     const notesArea = document.getElementById('notesArea');
     if(notesArea){
       let t;
@@ -1125,6 +1425,9 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       <button class="continue-btn" id="studyPickBtn" style="margin-top:10px;background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)" ${cols.length<2?'disabled':''}>
         <span>Study — pick collections</span>
       </button>
+      <button class="continue-btn" id="exportMissingAudioBtn" style="margin-top:10px;background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)" ${totalCards===0?'disabled':''}>
+        <span>Export cards missing audio</span>
+      </button>
     </div>`;
 
     view.innerHTML = html;
@@ -1152,6 +1455,35 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     view.querySelectorAll('[data-editcol]').forEach(btn => {
       btn.onclick = () => openCollection(btn.dataset.editcol);
     });
+    const exportBtn = document.getElementById('exportMissingAudioBtn');
+    if(exportBtn && totalCards>0) exportBtn.onclick = exportMissingAudioCards;
+  }
+
+  // ---------- audio sync: export flashcard text that has no generated clip yet ----------
+  function getMissingAudioCards(){
+    const texts = new Set();
+    (STATE.cards||[]).forEach(c => { if(c.de) texts.add(c.de); });
+    // if the manifest hasn't finished loading yet, treat everything as unknown rather
+    // than under-reporting — the sync script checks the real manifest.json anyway
+    if(!AUDIO_MANIFEST) return Array.from(texts);
+    return Array.from(texts).filter(t => !AUDIO_MANIFEST.has(t));
+  }
+
+  function exportMissingAudioCards(){
+    const missing = getMissingAudioCards();
+    if(missing.length === 0){
+      alert('All your flashcards already have pronunciation audio!');
+      return;
+    }
+    const blob = new Blob([JSON.stringify(missing, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'missing-audio-cards.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   // ---------- FLASHCARDS: manage a collection ----------
