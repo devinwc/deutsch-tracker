@@ -219,6 +219,17 @@ a{color:inherit;}
 }
 .rec-takes-list .rec-take-del:hover{opacity:1;}
 .rec-takes-heading{font-size:11px;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin-bottom:6px;text-align:left;}
+.rec-compare{
+  border-top:1px solid rgba(0,0,0,.12);margin-top:2px;padding-top:14px;text-align:left;
+}
+.rec-compare-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin-bottom:6px;}
+.rec-compare select{
+  width:100%;border:1.5px solid var(--ink);border-radius:var(--radius);
+  background:var(--cream);padding:7px 8px;font-size:12.5px;margin-bottom:8px;
+}
+.rec-compare-actions{display:flex;gap:8px;}
+.rec-compare-actions button{flex:1;min-width:0;}
+.rec-compare-actions button:disabled{opacity:.5;cursor:default;}
 
 .card{
   border:1.5px solid var(--ink);border-radius:var(--radius);
@@ -344,12 +355,6 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 .quiz-opt.wrong{background:var(--burgundy);color:#fff;border-color:var(--burgundy);}
 
 ::-webkit-scrollbar{display:none;}
-.hidden{display:none !important;}
-
-@media (max-width:380px){
-  .dial{width:96px;height:96px;}
-  .hero{gap:12px;}
-}
 </style>
 </head>
 <body>
@@ -359,6 +364,21 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   <div>
     <h1 id="topTitle">Week</h1>
     <div class="sub" id="topSub"></div>
+  </div>
+</div>
+
+<div id="authOverlay" class="recorder-overlay hidden">
+  <div class="recorder-modal" style="max-width:320px">
+    <div class="rec-task" style="font-size:16px;font-weight:700">Sign in to sync</div>
+    <div style="font-size:12.5px;opacity:.75;margin-bottom:16px">Your flashcards and progress sync across devices once signed in. You can also skip this and use the app locally on this device only.</div>
+    <input type="email" id="authEmail" placeholder="Email" autocomplete="username" style="width:100%;border:1.5px solid var(--ink);border-radius:var(--radius);background:var(--cream);padding:9px 10px;font-size:14px;margin-bottom:8px;box-sizing:border-box">
+    <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password" style="width:100%;border:1.5px solid var(--ink);border-radius:var(--radius);background:var(--cream);padding:9px 10px;font-size:14px;margin-bottom:10px;box-sizing:border-box">
+    <div id="authError" style="font-size:12px;color:var(--burgundy);margin-bottom:10px;min-height:16px"></div>
+    <div class="rec-actions" style="margin-bottom:8px">
+      <button class="continue-btn" id="authSignInBtn" style="background:var(--green)"><span>Sign in</span></button>
+      <button class="continue-btn" id="authSignUpBtn" style="background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)"><span>Create account</span></button>
+    </div>
+    <button class="continue-btn" id="authSkipBtn" style="background:none;border:none;font-size:12px;opacity:.7;text-decoration:underline"><span>Use offline on this device only</span></button>
   </div>
 </div>
 
@@ -376,6 +396,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 </div>
 
 <script id="curriculum-data" type="application/json">[{"week": 1, "phase": 1, "dates": "Aug 10 – Aug 16, 2026", "startDate": "2026-08-10", "focus": "Greetings, Self-Introduction, Numbers, Sein/Haben", "days": [{"day": "Monday", "label": "session 1, ~45–60 min", "tasks": ["Watch Folge 1–2 (Hallo!, Kein Problem!), do the built-in exercises", "Learn sein conjugation and first 6 vocab rows — make Anki cards as you go", "Speaking: introduce yourself out loud 3x, no notes"]}, {"day": "Tuesday", "label": "rest/review day", "tasks": ["Quiz yourself on Monday's Anki cards", "Re-read the practice dialogue once, out loud"]}, {"day": "Wednesday", "label": "session 2, ~45–60 min", "tasks": ["Watch Folge 3, 5, 6 (Tschüss!, Ich heiße Emma, Das ist Nico)", "Learn haben conjugation and remaining vocab rows", "Speaking: read the full practice dialogue aloud, both roles"]}, {"day": "Thursday", "label": "rest/review day", "tasks": ["Anki review only", "Watch Folge 9: Zahlen von 1 bis 100 and do its built-in exercises"]}, {"day": "Friday", "label": "session 3, ~45–60 min", "tasks": ["Watch Folge 7 (Woher kommst du?)", "Speaking: record yourself introducing yourself and improvising a greeting exchange; listen back once", "Count out loud 0–100"]}, {"day": "Saturday", "label": "immersion day", "tasks": ["One Easy German street-interview video, subtitles on, no note-taking — just listen"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Catch up on anything shaky", "Run the Self-Check before Week 2 starts Monday"]}], "resourceNote": null, "resources": ["Nicos Weg A1 — Folge 1: Hallo! (greetings) — https://learngerman.dw.com/en/hallo/l-37250531", "Nicos Weg A1 — Folge 2: Kein Problem! — https://learngerman.dw.com/en/kein-problem/l-37251054", "Nicos Weg A1 — Folge 3: Tschüss! (saying goodbye) — https://learngerman.dw.com/en/tsch%C3%BCss/l-37251033", "Nicos Weg A1 — Folge 5: Ich heiße Emma (introducing yourself) — https://learngerman.dw.com/en/ich-hei%C3%9Fe-emma/l-37262882", "Nicos Weg A1 — Folge 6: Das ist Nico (introducing someone else) — https://learngerman.dw.com/en/das-ist-nico/l-37262923", "Nicos Weg A1 — Folge 7: Woher kommst du? (asking where someone's from) — https://learngerman.dw.com/en/woher-kommst-du/l-37263828", "Nicos Weg A1 — Folge 9: Zahlen von 1 bis 100 (numbers) — https://learngerman.dw.com/en/zahlen-von-1-bis-100/l-37265621", "Bonus/optional: Folge 4 Von A bis Z — the alphabet, for spelling your name aloud — https://learngerman.dw.com/en/von-a-bis-z/l-37256418", "Immersion: one Easy German street-interview video, subtitles on"], "grammar": [{"title": "Sein (to be) — present tense", "rows": [["ich bin", "wir sind"], ["du bist", "ihr seid"], ["er/sie/es ist", "sie/Sie sind"]]}, {"title": "Haben (to have) — present tense", "rows": [["ich habe", "wir haben"], ["du hast", "ihr habt"], ["er/sie/es hat", "sie/Sie haben"]]}], "grammarNote": "You'll use sein constantly (\"Ich bin müde,\" \"Das ist gut\") and haben for possession and later for past tense — get these two solid now.", "vocab": [["Hallo / Guten Tag", "Hi / Good day"], ["Guten Morgen / Guten Abend", "Good morning / evening"], ["Wie geht es dir? / Wie geht's?", "How are you? (informal)"], ["Wie geht es Ihnen?", "How are you? (formal)"], ["Mir geht's gut, danke", "I'm doing well, thanks"], ["Ich heiße...", "My name is..."], ["Wie heißt du? / Wie heißen Sie?", "What's your name? (informal/formal)"], ["Woher kommst du?", "Where are you from?"], ["Ich komme aus...", "I come from..."], ["Freut mich", "Nice to meet you"], ["Tschüss / Auf Wiedersehen", "Bye (informal/formal)"], ["Bis bald / Bis später", "See you soon / later"]], "vocabNote": "Anki tip: make each card the full phrase, not the single word.", "dialogue": [["A", "Hallo! Wie heißt du?"], ["B", "Ich heiße Lena. Und du?"], ["A", "Ich bin Tom. Woher kommst du?"], ["B", "Ich komme aus Berlin. Und du, woher kommst du?"], ["A", "Ich komme aus den USA. Wie geht's dir?"], ["B", "Mir geht's gut, danke! Und dir?"], ["A", "Auch gut. Freut mich, Lena!"], ["B", "Freut mich auch, Tom! Bis bald!"]], "speaking": ["Introduce yourself in German: name, where you're from, how you're feeling — 3–4 sentences, no notes", "Count out loud 0–20, then by tens to 100", "Record yourself doing the introduction; listen back and note one thing to fix", "Improvise a 30-second greeting exchange like the dialogue, but change the details"], "selfcheck": ["Greet someone formally and informally", "Say your name and ask theirs", "Say where you're from and ask where someone else is from", "Say how you're feeling", "Count 0–100", "Conjugate sein and haben fully from memory"], "milestone": null}, {"week": 2, "phase": 1, "dates": "Aug 17 – Aug 23, 2026", "startDate": "2026-08-17", "focus": "W-Fragen & Present Tense Regular Verbs", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 8 (Nico hat ein Problem) + Folge 13 (Was machst du hier?)", "Learn the W-Fragen and regular verb conjugation pattern", "Speaking: ask all 6 W-Fragen out loud about a random topic"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review of last week's cards + this week's new W-Fragen", "Re-read Monday's material once out loud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch Folge 10 (Wichtige Nummern) + Folge 11 (Adressen)", "Learn address/contact vocab", "Speaking: recite your own (real or made-up) address and phone number in German"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Read the practice dialogue aloud once"]}, {"day": "Friday", "label": "session 3", "tasks": ["Watch Folge 12 (Auf dem Amt)", "Speaking: record yourself asking/answering W-Fragen; listen back", "Full run-through of regular verb conjugations from memory"]}, {"day": "Saturday", "label": "immersion", "tasks": ["One more Easy German video, subtitles on"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 3"]}], "resourceNote": "We're cherry-picking Nicos Weg episodes to match this week's grammar focus rather than going in strict order — you'll circle back to skipped episodes (10–12 partially) as we go.", "resources": ["Nicos Weg A1 — Folge 8: Nico hat ein Problem — https://learngerman.dw.com/en/nico-hat-ein-problem/l-37265543", "Nicos Weg A1 — Folge 10: Wichtige Nummern — https://learngerman.dw.com/en/wichtige-nummern/l-37269501", "Nicos Weg A1 — Folge 11: Adressen — https://learngerman.dw.com/en/adressen/l-37269671", "Nicos Weg A1 — Folge 12: Auf dem Amt — https://learngerman.dw.com/en/auf-dem-amt/l-37269629", "Nicos Weg A1 — Folge 13: Was machst du hier? — https://learngerman.dw.com/en/was-machst-du-hier/l-37278679", "Immersion: one Easy German street-interview video, subtitles on"], "grammar": [{"title": "W-Fragen (question words)", "rows": [["Wer? — Who?", "Wo? — Where?"], ["Was? — What?", "Wann? — When?"], ["Warum? — Why?", "Wie? — How?"]]}, {"title": "Present tense — regular verbs (e.g. wohnen, to live)", "rows": [["ich wohne", "wir wohnen"], ["du wohnst", "ihr wohnt"], ["er/sie/es wohnt", "sie/Sie wohnen"]]}], "grammarNote": "Word order: question word + verb + subject → Wo wohnst du? Watch for stems ending in -t/-d (like arbeiten) — they add an extra -e: du arbeitest, er arbeitet.", "vocab": [["Wo wohnst du?", "Where do you live?"], ["Ich wohne in...", "I live in..."], ["Die Adresse", "The address"], ["Die Straße", "The street"], ["Die Hausnummer", "The house number"], ["Die Postleitzahl (PLZ)", "The postal code"], ["Die Stadt", "The city"], ["Die Telefonnummer", "The phone number"], ["Was machst du? / Was machst du hier?", "What do you do? / doing here?"], ["Ich arbeite als...", "I work as..."], ["Ich lerne Deutsch", "I'm learning German"]], "vocabNote": null, "dialogue": [["A", "Entschuldigung, wie heißen Sie?"], ["B", "Ich heiße Frau Bauer."], ["A", "Wo wohnen Sie, Frau Bauer?"], ["B", "Ich wohne in der Musterstraße 12, Berlin."], ["A", "Und wie ist Ihre Telefonnummer?"], ["B", "Meine Telefonnummer ist 030 1234567."], ["A", "Was machen Sie hier?"], ["B", "Ich lerne Deutsch. Und Sie, was machen Sie hier?"], ["A", "Ich arbeite hier."]], "speaking": ["Ask and answer all six W-Fragen out loud about yourself, unscripted", "Give your address and phone number in German", "Record a 30-second version of the practice dialogue, both roles", "Conjugate wohnen, machen, and arbeiten fully from memory, out loud"], "selfcheck": ["Ask all six W-Fragen correctly", "Conjugate a regular verb (including a -t/-d stem verb) in all six forms", "Give an address and phone number in German", "Ask someone what they do/are doing"], "milestone": null}, {"week": 3, "phase": 1, "dates": "Aug 24 – Aug 30, 2026", "startDate": "2026-08-24", "focus": "Ordering, Shopping Phrases & Polite Requests", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 14 (Was trinkst du?)", "Learn möchten conjugation and modal-verb word order", "Speaking: order a drink out loud using \"Ich möchte...\""]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read practice dialogue once out loud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch Folge 15 (Eine Pizza, bitte!)", "Learn können conjugation", "Speaking: order food using both möchten and können"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Recite numbers 0–100 again — you'll need them for prices"]}, {"day": "Friday", "label": "session 3", "tasks": ["Watch Folge 16 (Zahlen, bitte!)", "Speaking: record the full restaurant dialogue, both roles", "Practice reacting to prices out loud (\"Das kostet...\", \"Das ist teuer/günstig\")"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video, café/market themed if you can find one"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 4"]}], "resourceNote": "These three episodes are Nicos Weg's dedicated café/restaurant sequence. Broader grocery-shopping vocabulary (Folge 49–52) comes later in the course — you'll hit that in Phase 4. For now, café/restaurant ordering is the practical foundation.", "resources": ["Nicos Weg A1 — Folge 14: Was trinkst du? — https://learngerman.dw.com/en/was-trinkst-du/l-37279418", "Nicos Weg A1 — Folge 15: Eine Pizza, bitte! — https://learngerman.dw.com/en/eine-pizza-bitte/l-37279261", "Nicos Weg A1 — Folge 16: Zahlen, bitte! — https://learngerman.dw.com/en/zahlen-bitte/l-37280348", "Immersion: Easy German video, café/market themed if available"], "grammar": [{"title": "Möchten (would like) — present tense", "rows": [["ich möchte", "wir möchten"], ["du möchtest", "ihr möchtet"], ["er/sie/es möchte", "sie/Sie möchten"]]}, {"title": "Können (can) — present tense", "rows": [["ich kann", "wir können"], ["du kannst", "ihr könnt"], ["er/sie/es kann", "sie/Sie können"]]}], "grammarNote": "Modal verbs push the main verb to the infinitive at the end: Ich möchte ein Wasser bestellen. Ich kann gut Deutsch sprechen.", "vocab": [["Ich möchte gern...", "I would like..."], ["Ich hätte gern...", "I would like (more formal)"], ["Ich nehme...", "I'll have/take..."], ["Wir möchten gern bestellen", "We'd like to order"], ["Die Speisekarte", "The menu"], ["Aber ohne/mit... bitte", "But without/with... please"], ["Guten Appetit!", "Enjoy your meal!"], ["Die Rechnung, bitte", "The bill, please"], ["Wir möchten bitte zahlen", "We'd like to pay, please"], ["Das macht.../Das kostet...", "That comes to.../costs..."], ["Sonst noch etwas?", "Anything else?"], ["Nein, danke / Ja, bitte", "No, thanks / Yes, please"]], "vocabNote": null, "dialogue": [["Kellner", "Guten Tag! Was möchten Sie trinken?"], ["Gast", "Ich hätte gern ein Wasser, bitte."], ["Kellner", "Und zu essen?"], ["Gast", "Ich nehme eine Pizza. Aber ohne Oliven, bitte."], ["Kellner", "Kein Problem. Sonst noch etwas?"], ["Gast", "Nein, danke."], ["Gast", "(later) Entschuldigung, wir möchten bitte zahlen."], ["Kellner", "Natürlich. Das macht 14 Euro."], ["Gast", "Bitte schön."], ["Kellner", "Danke schön, guten Appetit — äh, ich meine, auf Wiedersehen!"]], "speaking": ["Order a full meal out loud (drink + food + a modification like \"ohne...\")", "Say three things you can do using können (\"Ich kann...\")", "Record yourself doing the full restaurant dialogue, both roles", "Ask for the bill and react to a price out loud"], "selfcheck": ["Conjugate möchten and können fully from memory", "Order food and drink, including a modification (\"ohne/mit...\")", "Ask for and react to the bill", "Correctly push the infinitive to the end of a modal-verb sentence"], "milestone": null}, {"week": 4, "phase": 1, "dates": "Aug 31 – Sep 6, 2026", "startDate": "2026-08-31", "focus": "Daily Routine, Telling Time & Separable Verbs", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 29 (Emmas Tag)", "Learn the separable-verb pattern", "Speaking: describe your morning routine out loud, 3–4 sentences"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read vocab out loud once"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch Folge 30 (Tageszeiten) + Folge 33 (Wie spät ist es?)", "Learn telling time", "Speaking: say the current time out loud, then 5 random times"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Recap separable verbs: conjugate 3 of them fully from memory"]}, {"day": "Friday", "label": "session 3", "tasks": ["Watch Folge 31 (Am Sonntag koche ich)", "Speaking: record yourself describing your full day, morning to night", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — daily routine/morning themed if you can find one"]}, {"day": "Sunday", "label": "buffer / rest — Phase 1 milestone", "tasks": ["Self-Check", "Phase 1 milestone: 3-minute unscripted conversation about your day"]}], "resourceNote": "Folge 32, 34–36 continue this \"days and appointments\" arc — optional extra practice, not required to hit this week's goals.", "resources": ["Nicos Weg A1 — Folge 29: Emmas Tag — https://learngerman.dw.com/en/emmas-tag/l-37442425", "Nicos Weg A1 — Folge 30: Tageszeiten — https://learngerman.dw.com/en/tageszeiten/l-37445884", "Nicos Weg A1 — Folge 31: Am Sonntag koche ich — https://learngerman.dw.com/en/am-sonntag-koche-ich/l-37452061", "Nicos Weg A1 — Folge 33: Wie spät ist es? — https://learngerman.dw.com/en/wie-sp%C3%A4t-ist-es/l-37453621", "Immersion: Easy German video, daily-routine themed if available"], "grammar": [{"title": "Separable verbs — prefix jumps to the end", "rows": [["aufstehen → Ich stehe ... auf", "to get up"], ["fernsehen → Ich sehe ... fern", "to watch TV"], ["anrufen → Ich rufe ... an", "to call"]]}, {"title": "Telling time", "rows": [["Wie spät ist es?", "What time is it?"], ["Es ist ... Uhr", "It's ... o'clock"], ["Es ist halb acht", "It's 7:30"], ["Es ist Viertel nach/vor...", "It's quarter past/to..."]]}], "grammarNote": "The verb still conjugates normally — only the prefix splits off. \"Halb acht\" trips up most learners: it means halfway to eight, i.e. 7:30, not 8:30. Drill this one specifically.", "vocab": [["aufstehen", "to get up"], ["frühstücken", "to have breakfast"], ["nach Hause kommen", "to come home"], ["kochen", "to cook"], ["fernsehen", "to watch TV"], ["ins Bett gehen", "to go to bed"], ["der Morgen / am Morgen", "morning / in the morning"], ["der Mittag / mittags", "noon / at noon"], ["der Nachmittag", "afternoon"], ["der Abend / abends", "evening / in the evenings"], ["die Nacht", "night"], ["immer / meistens / manchmal / nie", "always / mostly / sometimes / never"]], "vocabNote": null, "dialogue": [["A", "Wie sieht dein Tag aus?"], ["B", "Ich stehe um sieben Uhr auf und frühstücke um halb acht."], ["A", "Und dann?"], ["B", "Ich arbeite von neun bis fünf. Um fünf komme ich nach Hause."], ["A", "Was machst du abends?"], ["B", "Meistens koche ich und sehe dann fern. Ich gehe um elf ins Bett."], ["A", "Und am Sonntag?"], ["B", "Am Sonntag koche ich nicht — ich esse mit Freunden!"]], "speaking": ["Describe your typical weekday, start to finish, using at least three separable verbs", "Say five different times out loud (mix of \"Uhr,\" \"halb,\" and \"Viertel\" forms)", "Record yourself describing your day; check your separable-verb word order", "Describe how your Sunday differs from a weekday"], "selfcheck": ["Conjugate and correctly place three separable verbs in a sentence", "Tell time, including \"halb\" and \"Viertel\" forms", "Describe a full day, morning to night, unscripted", "Use \"immer/meistens/manchmal/nie\" naturally"], "milestone": "3-minute unscripted conversation about your day. This pulls together everything from Weeks 1–4 — greetings, questions, ordering, routine, and time. If you can do this comfortably, you're ready for Phase 2 (past tense, modals for opinions, cases)."}, {"week": 5, "phase": 2, "dates": "Sep 7 – Sep 13, 2026", "startDate": "2026-09-07", "focus": "Past Tense (Perfekt) — Part 1", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 53 (Wie war dein Urlaub?) — Nicos Weg's Perfekt introduction", "Learn Perfekt formation with haben + regular (weak) verbs", "Speaking: say 3 things you did yesterday using haben + Partizip II"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read time-expression vocab aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Rewatch Folge 53's grammar exercises a second time for retention", "Drill the weak-verb Partizip II pattern until automatic", "Speaking: describe last weekend, 4–5 sentences"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Re-read the practice dialogue aloud"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record yourself describing yesterday and last weekend; listen back", "Drill time expressions (gestern, letzte Woche, vor zwei Tagen, schon, noch nicht)"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — people describing recent events/trips if you can find one"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 6 (adds sein + irregular verbs)"]}], "resourceNote": "This week uses only one episode on purpose — it's a dense grammar topic and deserves full attention before Week 6 adds the harder half.", "resources": ["Nicos Weg A1 — Folge 53: Wie war dein Urlaub? (dedicated Perfekt introduction) — https://learngerman.dw.com/en/wie-war-dein-urlaub/l-37648534", "Immersion: Easy German video, ideally someone recounting a trip or recent event"], "grammar": [{"title": "Perfekt = [conjugated haben] + ... + [Partizip II at the end]", "rows": []}, {"title": "Regular (weak) verbs — Partizip II: ge + stem + t", "rows": [["machen → gemacht", "Ich habe das gemacht."], ["lernen → gelernt", "Ich habe Deutsch gelernt."], ["spielen → gespielt", "Wir haben Fußball gespielt."], ["arbeiten → gearbeitet", "Sie hat viel gearbeitet."], ["kochen → gekocht", "Er hat Pasta gekocht."]]}, {"title": "Haben — present tense (review)", "rows": [["ich habe", "wir haben"], ["du hast", "ihr habt"], ["er/sie/es hat", "sie/Sie haben"]]}], "grammarNote": "arbeiten gets an extra -e (gearbeitet) for the same reason as its present tense (du arbeitest). This week: haben + weak verbs only — Week 6 adds sein + irregular verbs.", "vocab": [["gestern", "yesterday"], ["vorgestern", "the day before yesterday"], ["letzte Woche", "last week"], ["letztes Jahr", "last year"], ["vor zwei Tagen", "two days ago"], ["am Wochenende", "on the weekend"], ["schon", "already"], ["noch nicht", "not yet"], ["dann", "then"], ["danach", "after that"]], "vocabNote": null, "dialogue": [["A", "Wie war dein Wochenende?"], ["B", "Sehr gut! Ich habe am Samstag gekocht und dann Musik gespielt."], ["A", "Klingt schön. Was hast du gestern gemacht?"], ["B", "Gestern habe ich gearbeitet. Aber am Abend habe ich Freunde besucht."], ["A", "Hast du schon dein Deutsch gelernt heute?"], ["B", "Ja, ich habe schon 30 Minuten gelernt!"]], "speaking": ["Say three things you did yesterday, each with a different weak verb", "Describe your last weekend, 4–5 sentences, all in Perfekt", "Record yourself doing that; check haben is in position 2 and the participle is at the end", "Ask \"Was hast du gestern gemacht?\" and answer fully"], "selfcheck": ["Form the Partizip II of at least 5 regular verbs from memory", "Conjugate haben correctly in a Perfekt sentence", "Correctly place the participle at the end of the sentence", "Describe yesterday and last weekend using only haben + weak verbs"], "milestone": null}, {"week": 6, "phase": 2, "dates": "Sep 14 – Sep 20, 2026", "startDate": "2026-09-14", "focus": "Past Tense (Perfekt) — Part 2: Sein & Irregular Verbs", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 55 (Der Ausflug) — Perfekt with haben AND sein", "Learn which verbs take sein and drill the list", "Speaking: say 3 things using sein + Partizip II (e.g. \"Ich bin gegangen\")"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read irregular-verb list aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Learn common irregular (strong) verb participles", "Optional: briefly revisit Folge 17 (Ich war schon in Berlin) for the \"war\" preterite of sein", "Speaking: describe a trip or outing mixing haben- and sein-verbs"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Quiz yourself: for each verb, is it haben or sein?"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record yourself recounting a full day or trip", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video, any topic"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 7"]}], "resourceNote": null, "resources": ["Nicos Weg A1 — Folge 55: Der Ausflug (Perfekt with haben and sein together) — https://learngerman.dw.com/en/der-ausflug/l-37651657", "Optional review: Folge 17 Ich war schon in Berlin — \"war\" shows up constantly in real speech alongside Perfekt — https://learngerman.dw.com/en/ich-war-schon-in-berlin/l-37325550", "Immersion: Easy German video, any topic"], "grammar": [{"title": "Verbs taking sein — motion/change of state", "rows": [["gehen → gegangen", "Ich bin nach Hause gegangen."], ["fahren → gefahren", "Wir sind nach Berlin gefahren."], ["kommen → gekommen", "Er ist spät gekommen."], ["bleiben → geblieben", "Sie ist zu Hause geblieben."], ["sein → gewesen", "Ich bin im Park gewesen."]]}, {"title": "Common irregular verbs (all take haben)", "rows": [["sehen → gesehen", "essen → gegessen"], ["trinken → getrunken", "lesen → gelesen"], ["schreiben → geschrieben", "sprechen → gesprochen"]]}], "grammarNote": "Separable verbs: ge- slots between prefix and stem — aufstehen → aufgestanden, anrufen → angerufen. Verbs starting with be-/ver-/er-/ent-/emp- never take ge-: besuchen → besucht (not gebesucht).", "vocab": [["nehmen → genommen", "to take"], ["geben → gegeben", "to give"], ["finden → gefunden", "to find"], ["helfen → geholfen", "to help"], ["treffen → getroffen", "to meet"], ["bekommen → bekommen", "to receive (no ge-)"], ["besuchen → besucht", "to visit (no ge-)"]], "vocabNote": null, "dialogue": [["A", "Was hast du am Wochenende gemacht?"], ["B", "Ich bin nach München gefahren und habe meine Freundin besucht."], ["A", "Wie war es?"], ["B", "Sehr schön! Wir sind spazieren gegangen und haben zusammen gegessen."], ["A", "Bist du schon zurück?"], ["B", "Ja, ich bin gestern Abend zurückgekommen. Und du, was hast du gemacht?"], ["A", "Ich bin zu Hause geblieben und habe ein Buch gelesen."]], "speaking": ["Say three sentences using sein + a motion verb", "Recount a full outing or trip, mixing haben- and sein-verbs naturally", "Record yourself doing that; check each verb's auxiliary is correct", "Use at least one be-/ver- verb correctly (no ge- prefix)"], "selfcheck": ["Know which common verbs take sein vs haben", "Form Partizip II for at least 6 irregular verbs from memory", "Correctly skip ge- on be-/ver-/er- verbs", "Recount a full day or trip in Perfekt, mixing both auxiliaries"], "milestone": null}, {"week": 7, "phase": 2, "dates": "Sep 21 – Sep 27, 2026", "startDate": "2026-09-21", "focus": "Modal Verbs for Opinions & Obligations", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Grammar first: learn müssen and dürfen", "Watch Folge 50 (Was darf es sein?) for dürfen in context", "Speaking: say 3 obligations (\"Ich muss...\") and 3 things you can't do (\"Ich darf nicht...\")"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read vocab aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Learn wollen and sollen", "Watch Folge 40 (Traumberufe) for wollen in context", "Speaking: say 3 things you want to do and 3 things someone should do"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill all four modal conjugations from memory, out loud"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record the full practice dialogue, both roles", "Mixed practice: use all four modals in a 1-minute monologue about your week"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — listen for modal verbs you now recognize"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 8"]}], "resourceNote": "Unlike most weeks, Nicos Weg doesn't cluster all four modals into one block — they're scattered. This week leans more on direct grammar drilling, with episodes for context only.", "resources": ["Nicos Weg A1 — Folge 50: Was darf es sein? (dürfen, contextual) — https://learngerman.dw.com/en/was-darf-es-sein/l-37635620", "Nicos Weg A1 — Folge 40: Traumberufe (wollen, contextual) — https://learngerman.dw.com/en/traumberufe/l-37477568", "Better for the grammar itself: search \"DW Grammatiktrainer Modalverben\" at learngerman.dw.com", "Immersion: Easy German video, any topic"], "grammar": [{"title": "All four modals — present tense", "rows": [["", "müssen | dürfen | sollen | wollen"], ["ich", "muss | darf | soll | will"], ["du", "musst | darfst | sollst | willst"], ["er/sie/es", "muss | darf | soll | will"], ["wir", "müssen | dürfen | sollen | wollen"], ["ihr", "müsst | dürft | sollt | wollt"], ["sie/Sie", "müssen | dürfen | sollen | wollen"]]}], "grammarNote": "ich and er/sie/es always share the same form. Word order: modal in position 2, infinitive at the end — Ich muss heute arbeiten. Meaning trap: nicht müssen = don't have to; nicht dürfen = not allowed to (these are NOT interchangeable).", "vocab": [["Ich muss arbeiten", "I have to work"], ["Ich muss nicht arbeiten", "I don't have to work"], ["Du darfst das nicht machen", "You're not allowed to do that"], ["Was darf es sein?", "What can I get you?"], ["Du solltest...", "You should... (softer form)"], ["Ich will nach Hause", "I want to go home"], ["Was willst du werden?", "What do you want to become?"], ["Ich soll...", "I'm supposed to..."]], "vocabNote": null, "dialogue": [["A", "Was machst du heute?"], ["B", "Ich muss arbeiten, aber danach will ich ins Kino gehen."], ["A", "Darf ich mitkommen?"], ["B", "Klar! Aber wir sollen früh gehen — der Film beginnt um sieben."], ["A", "Kein Problem. Musst du morgen auch arbeiten?"], ["B", "Nein, morgen muss ich nicht arbeiten. Ich will lange schlafen!"]], "speaking": ["Say three things you must do, three you're not allowed to do, three you want to do", "Give advice using sollen (\"Du solltest mehr schlafen\")", "Record the full practice dialogue with yourself playing both roles", "Give a 1-minute monologue about your week using all four modals at least once each"], "selfcheck": ["Conjugate all four modal verbs fully from memory", "Explain the difference between \"nicht müssen\" and \"nicht dürfen\"", "Use each modal correctly with the infinitive at the end", "Give simple advice using sollen"], "milestone": null}, {"week": 8, "phase": 2, "dates": "Sep 28 – Oct 4, 2026", "startDate": "2026-09-28", "focus": "Accusative & Dative Cases via Everyday Prepositions", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 22 (Wem gehört das?) — introduces dative", "Learn the article change table — just the pattern for now", "Speaking: practice \"Wem gehört das?\" / \"Das gehört mir/dir/ihm...\""]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read the article table aloud until you can recite it"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch Folge 39 (Wo ist der Aufzug?) + Folge 44 (Im Büro)", "Learn two-way (Wechsel) prepositions and the wo/wohin distinction", "Speaking: describe where 5 objects are in your room, using dative"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill: for each preposition, is it accusative-only, dative-only, or two-way?"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record yourself doing the practice dialogue", "Mixed drill: 5 sentences, alternating accusative and dative prepositions"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video, any topic"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 9 (builds on this for directions)"]}], "resourceNote": "This is the week most learners find hardest. Go slow — it's normal for cases to take longer than a week to click.", "resources": ["Nicos Weg A1 — Folge 22: Wem gehört das? (dative) — https://learngerman.dw.com/en/wem-geh%C3%B6rt-das/l-37372077", "Nicos Weg A1 — Folge 39: Wo ist der Aufzug? (location prepositions) — https://learngerman.dw.com/en/wo-ist-der-aufzug/l-37476734", "Nicos Weg A1 — Folge 44: Im Büro (heavy preposition practice) — https://learngerman.dw.com/en/im-b%C3%BCro/l-37595501", "Immersion: Easy German video, any topic"], "grammar": [{"title": "Case changes the article", "rows": [["", "Nominative | Accusative | Dative"], ["der (masc.)", "der | den | dem"], ["die (fem.)", "die | die | der"], ["das (neut.)", "das | das | dem"], ["die (plural)", "die | die | den (+n)"]]}], "grammarNote": "Dative-only: mit, nach, bei, seit, von, zu, aus. Accusative-only: für, ohne, gegen, durch, um. Two-way (an, auf, hinter, in, neben, über, unter, vor, zwischen): accusative for motion (wohin?), dative for static location (wo?). E.g. \"Die Katze ist auf dem Tisch\" (dative, sitting there) vs \"Die Katze geht auf den Tisch\" (accusative, moving onto it) — this wo/wohin distinction is the single most useful thing to internalize this week.", "vocab": [["der Tisch / auf dem Tisch", "the table / on the table"], ["der Stuhl / neben dem Stuhl", "the chair / next to the chair"], ["das Fenster / vor dem Fenster", "the window / in front of the window"], ["die Wand / an der Wand", "the wall / on the wall"], ["der Schrank / im Schrank", "the cabinet / in the cabinet"], ["Wem gehört das?", "Whose is that?"], ["Das gehört mir/dir/ihm/ihr", "That belongs to me/you/him/her"], ["Wo ist...? / Wohin gehst du?", "Where is...? / Where are you going?"]], "vocabNote": null, "dialogue": [["A", "Entschuldigung, wo ist der Aufzug?"], ["B", "Der Aufzug ist neben der Treppe, hinter dem Empfang."], ["A", "Danke! Und wem gehört diese Tasche hier auf dem Tisch?"], ["B", "Die gehört mir, danke!"], ["A", "Kein Problem. Gehst du gleich in dein Büro?"], ["B", "Ja, ich gehe jetzt in mein Büro — es ist im dritten Stock."]], "speaking": ["Describe where 5 objects are in your room using dative", "Say 3 sentences with motion into/onto something using accusative", "Ask and answer \"Wem gehört das?\" for 3 different objects", "Record yourself doing the first two; check your article/case matches"], "selfcheck": ["Recite the accusative and dative article changes from memory", "Choose accusative vs dative for a two-way preposition based on wo/wohin", "Use at least 3 dative-only and 3 accusative-only prepositions correctly", "Answer \"Wem gehört das?\" correctly"], "milestone": null}, {"week": 9, "phase": 2, "dates": "Oct 5 – Oct 11, 2026", "startDate": "2026-10-05", "focus": "Directions, Describing Places & Comparatives", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 41 (Wo ist der Bahnhof?) + Folge 42 (An der Ampel links)", "Learn direction vocab and the imperative for giving directions", "Speaking: give directions from your front door to your kitchen"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read vocab aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch Folge 43 (Mit Bus und Bahn)", "Learn comparatives", "Speaking: compare 3 pairs of things (bigger/smaller, better/worse, etc.)"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill irregular comparatives (gut/besser/best, viel/mehr/meist) from memory"]}, {"day": "Friday", "label": "session 3", "tasks": ["Watch Folge 46 (Ich mag (nicht)!) — comparative/superlative in a food-preference context", "Speaking: record yourself giving directions to a real nearby place", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — directions or comparisons themed if available"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 10"]}], "resourceNote": null, "resources": ["Nicos Weg A1 — Folge 41: Wo ist der Bahnhof? — https://learngerman.dw.com/en/wo-ist-der-bahnhof/l-37594551", "Nicos Weg A1 — Folge 42: An der Ampel links — https://learngerman.dw.com/en/an-der-ampel-links/l-37595076", "Nicos Weg A1 — Folge 43: Mit Bus und Bahn — https://learngerman.dw.com/en/mit-bus-und-bahn/l-37595395", "Nicos Weg A1 — Folge 46: Ich mag (nicht)! (comparative/superlative) — https://learngerman.dw.com/en/ich-mag-nicht/l-37599970", "Immersion: Easy German video, directions or comparison themed if available"], "grammar": [{"title": "Giving directions", "rows": [["Gehen Sie geradeaus", "Go straight ahead (formal)"], ["Geh geradeaus", "Go straight ahead (informal)"], ["Gehen Sie links/rechts", "Go left/right"], ["An der Ampel links", "Left at the traffic light"], ["Bis zur Kreuzung", "Until the intersection"], ["Es ist gegenüber von...", "It's across from..."]]}, {"title": "Irregular comparatives — memorize", "rows": [["gut → besser → am besten", "good → better → best"], ["viel → mehr → am meisten", "much → more → most"], ["gern → lieber → am liebsten", "gladly → preferably → most preferred"]]}], "grammarNote": "Regular comparatives: adjective + -er (schnell → schneller; groß → größer, note the umlaut). \"Than\" = als: Das Auto ist schneller als das Fahrrad.", "vocab": [["der Bahnhof", "the train station"], ["die Haltestelle", "the (bus/tram) stop"], ["die U-Bahn / die Bahn", "the subway / the train"], ["die Kreuzung", "the intersection"], ["die Ampel", "the traffic light"], ["geradeaus / links / rechts", "straight ahead / left / right"], ["in der Nähe von...", "near..."], ["weit weg von...", "far from..."], ["schneller/langsamer als", "faster/slower than"], ["größer/kleiner als", "bigger/smaller than"]], "vocabNote": null, "dialogue": [["A", "Entschuldigung, wie komme ich zum Bahnhof?"], ["B", "Gehen Sie hier geradeaus, dann an der Ampel links. Der Bahnhof ist gegenüber von der Bank."], ["A", "Ist das weit von hier?"], ["B", "Nein, das ist nicht weit — vielleicht fünf Minuten zu Fuß. Mit dem Bus ist es aber schneller als zu Fuß."], ["A", "Super, danke! Ist der Bus besser als die U-Bahn hier?"], ["B", "Ich finde den Bus besser — die U-Bahn-Station ist weiter weg."]], "speaking": ["Give directions from your home to a real nearby place, using at least 4 direction phrases", "Compare 3 pairs of things (including at least one irregular comparative)", "Record yourself giving directions; check imperative form and preposition use", "Ask \"Wie komme ich zu...?\" and answer fully for 2 different destinations"], "selfcheck": ["Give directions using imperative + geradeaus/links/rechts", "Use \"an der Ampel,\" \"an der Kreuzung,\" \"gegenüber von\" correctly", "Form regular comparatives correctly (including umlaut cases)", "Use all three irregular comparatives (besser, mehr, lieber) correctly"], "milestone": null}, {"week": 10, "phase": 2, "dates": "Oct 12 – Oct 18, 2026", "startDate": "2026-10-12", "focus": "Opinions and Preferences", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 47 (Haushaltsarbeit) — opinions about chores", "Learn opinion phrases and agree/disagree language", "Speaking: give your opinion on 3 everyday things (\"Ich finde...\")"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read vocab aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch Folge 48 (Was macht dir Spaß?) — preferences and hobbies", "Speaking: say what you like/dislike doing, using lieber/am liebsten"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Re-read the practice dialogue aloud, both roles"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record yourself agreeing and disagreeing with 3 opinions", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — opinion/interview format if available"]}, {"day": "Sunday", "label": "buffer / rest — Phase 2 milestone", "tasks": ["Self-Check", "Phase 2 milestone: describe your weekend, give directions, and exchange opinions"]}], "resourceNote": null, "resources": ["Nicos Weg A1 — Folge 47: Haushaltsarbeit — https://learngerman.dw.com/en/haushaltsarbeit/l-37631238", "Nicos Weg A1 — Folge 48: Was macht dir Spaß? — https://learngerman.dw.com/en/was-macht-dir-spa%C3%9F/l-37630630", "Immersion: Easy German video, opinion/interview format if available"], "grammar": [{"title": "Giving an opinion", "rows": [["Ich finde, dass...", "I think that..."], ["Ich glaube, dass...", "I believe that..."], ["Meiner Meinung nach...", "In my opinion..."]]}, {"title": "Agreeing and disagreeing", "rows": [["Das stimmt! / Genau!", "That's right! / Exactly!"], ["Das finde ich auch", "I think so too"], ["Das stimmt nicht", "That's not right"], ["Ich sehe das anders", "I see it differently"]]}], "grammarNote": "\"dass\" sends the verb to the end of its clause, same family as modal verbs pushing the infinitive back: Ich finde, dass das Buch gut ist. Preferences (review + expand): Ich koche gern. Ich koche lieber als putzen. Am liebsten koche ich Pasta.", "vocab": [["langweilig", "boring"], ["interessant", "interesting"], ["anstrengend", "exhausting/strenuous"], ["entspannend", "relaxing"], ["nützlich", "useful"], ["die Hausarbeit / putzen", "housework / to clean"], ["Was machst du gern?", "What do you like to do?"], ["Was macht dir Spaß?", "What's fun for you?"], ["Es macht mir (keinen) Spaß", "It's (not) fun for me"]], "vocabNote": null, "dialogue": [["A", "Was machst du am liebsten am Wochenende?"], ["B", "Ich koche sehr gern. Ich finde es entspannend."], ["A", "Wirklich? Ich finde Kochen anstrengend!"], ["B", "Das sehe ich anders — für mich ist Putzen viel anstrengender als Kochen."], ["A", "Das stimmt! Putzen macht mir gar keinen Spaß."], ["B", "Genau. Was machst du dann lieber?"], ["A", "Ich lese am liebsten. Meiner Meinung nach ist das die beste Entspannung."]], "speaking": ["Give your opinion on 3 everyday things using \"Ich finde, dass...\" and \"Meiner Meinung nach...\"", "Agree with one opinion and disagree with another, with a reason", "Say what you like doing, prefer doing, and like doing most (gern/lieber/am liebsten)", "Record yourself doing the opinion and agree/disagree tasks"], "selfcheck": ["Give an opinion using at least two different opinion phrases", "Agree and disagree naturally, with a reason", "Use gern/lieber/am liebsten correctly", "Correctly send the verb to the end of a \"dass\" clause"], "milestone": "Describe your weekend (past tense, Weeks 5–6), give directions somewhere (Week 9), and have a short exchange expressing and responding to an opinion (this week). This is a longer, more natural conversation than Phase 1's milestone — if you can do all three comfortably in one conversation, you're ready for Phase 3 (future tense, subjunctive, storytelling connectors)."}, {"week": 11, "phase": 3, "dates": "Oct 19 – Oct 25, 2026", "startDate": "2026-10-19", "focus": "Future Tense & Making Plans", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Learn werden conjugation and Futur I formation", "Search \"DW Grammatiktrainer Futur\" for drill practice", "Speaking: say 3 things you will do this week using werden + infinitive"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read planning vocab aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Learn planning/scheduling phrases", "Speaking: propose a plan and negotiate a time, out loud"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill werden conjugation from memory"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record the practice dialogue, both roles", "Practice: 3 predictions about your future using Futur I"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video, any topic"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 12"]}], "resourceNote": "Futur I is technically a B2-adjacent grammar point in DW's course structure — no dedicated Nicos Weg episode found. This week leans on direct grammar teaching + DW's Grammatiktrainer, which is fine for something this mechanically simple.", "resources": ["Grammar reference: search \"DW Grammatiktrainer Futur\" at learngerman.dw.com", "Immersion: Easy German video, any topic"], "grammar": [{"title": "Werden (to become) — present tense, the future auxiliary", "rows": [["ich werde", "wir werden"], ["du wirst", "ihr werdet"], ["er/sie/es wird", "sie/Sie werden"]]}], "grammarNote": "Futur I = werden + infinitive at the end: Ich werde morgen arbeiten. Reality check: Germans often use present tense + a time word instead for near-future plans (\"Ich fahre morgen nach Berlin\") — more common in casual speech than Futur I, which leans more toward predictions and promises.", "vocab": [["Wollen wir...?", "Shall we...?"], ["Hast du Lust auf...?", "Do you feel like...?"], ["Hast du Zeit am...?", "Do you have time on...?"], ["Wann passt es dir?", "When works for you?"], ["Ich habe am... Zeit", "I have time on..."], ["Das passt mir gut/nicht", "That works/doesn't work for me"], ["Machen wir es am... ab?", "Shall we settle on...?"], ["Ich freue mich darauf", "I'm looking forward to it"]], "vocabNote": null, "dialogue": [["A", "Hast du Lust, am Samstag etwas zu machen?"], ["B", "Klar! Was werden wir machen?"], ["A", "Ich werde ins Kino gehen. Willst du mitkommen?"], ["B", "Gern! Wann passt es dir?"], ["A", "Der Film beginnt um acht. Treffen wir uns um sieben?"], ["B", "Perfekt, das passt mir gut. Ich freue mich darauf!"]], "speaking": ["Say three things you will do this week using werden + infinitive", "Propose a plan to someone and negotiate a time", "Record the practice dialogue with yourself playing both roles", "Make three predictions about your future using Futur I"], "selfcheck": ["Conjugate werden fully from memory", "Form a correct Futur I sentence with the infinitive at the end", "Know when native speakers would use present tense instead of Futur I", "Propose a plan and negotiate a time naturally"], "milestone": null}, {"week": 12, "phase": 3, "dates": "Oct 26 – Nov 1, 2026", "startDate": "2026-10-26", "focus": "Invitations", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 61 (Herzlichen Glückwunsch!) + Folge 64 (Lieblingsfeste)", "Learn invitation vocab and accept/decline phrases", "Speaking: invite someone to something out loud"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read vocab aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch Folge 62 (Passende Geschenke) + Folge 63 (Was sollen wir schenken?)", "Speaking: discuss what gift to bring, using sollen"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Re-read the practice dialogue aloud, both roles"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record inviting someone, then accepting AND declining a different invitation", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video, any topic"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 13"]}], "resourceNote": "This is Nicos Weg's dedicated \"Invitations\" module — a clean, confirmed match for this week.", "resources": ["Nicos Weg A2 — Folge 61: Herzlichen Glückwunsch! — https://learngerman.dw.com/de/herzlichen-gl%C3%BCckwunsch/l-40588818", "Nicos Weg A2 — Folge 62: Passende Geschenke — https://learngerman.dw.com/de/passende-geschenke/l-40597066", "Nicos Weg A2 — Folge 63: Was sollen wir schenken? — https://learngerman.dw.com/de/was-sollen-wir-schenken/l-40597404", "Nicos Weg A2 — Folge 64: Lieblingsfeste — https://learngerman.dw.com/de/lieblingsfeste/l-40597935", "Immersion: Easy German video, any topic"], "grammar": [], "grammarNote": null, "vocab": [["Ich lade dich zu... ein", "I'm inviting you to..."], ["Möchtest du kommen?", "Would you like to come?"], ["Ich würde mich freuen, wenn du kommst", "I'd be glad if you came"], ["Ich komme gern!", "I'd love to come!"], ["Danke für die Einladung!", "Thanks for the invitation!"], ["Ich kann leider nicht", "Unfortunately I can't"], ["Ich habe leider schon etwas vor", "I already have plans"], ["Vielleicht ein anderes Mal", "Maybe another time"], ["Herzlichen Glückwunsch! / Alles Gute!", "Congratulations! / All the best!"], ["Was soll ich mitbringen?", "What should I bring?"], ["ein Geschenk / feiern", "a gift / to celebrate"]], "vocabNote": "\"Ich würde mich freuen, wenn...\" is your first taste of subjunctive — Week 13 covers it properly.", "dialogue": [["A", "Ich habe am Samstag Geburtstag. Ich lade dich herzlich ein!"], ["B", "Oh, herzlichen Glückwunsch! Ich komme sehr gern. Was soll ich mitbringen?"], ["A", "Nichts, komm einfach! Aber wenn du möchtest, bring gern eine Kleinigkeit."], ["B", "Okay, ich werde etwas Süßes mitbringen. Wann und wo feierst du?"], ["A", "Bei mir zu Hause, ab 19 Uhr."], ["B", "Perfekt, ich werde da sein! Danke für die Einladung."], ["C", "(declining) Ich würde auch gern kommen, aber ich habe leider schon etwas vor. Vielleicht ein anderes Mal?"], ["A", "Kein Problem, schade! Bis bald."]], "speaking": ["Invite someone to an event, out loud", "Accept one invitation and decline a different one", "Discuss what gift to bring, using \"sollen\"", "Record the full accept + decline exchange, both roles"], "selfcheck": ["Invite someone using at least two different invitation phrases", "Accept an invitation naturally", "Decline an invitation politely with a reason", "Ask what to bring and respond appropriately"], "milestone": null}, {"week": 13, "phase": 3, "dates": "Nov 2 – Nov 8, 2026", "startDate": "2026-11-02", "focus": "Subjunctive II Basics (würde, könnte, hätte)", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Learn würde + infinitive (the \"easy\" form)", "Search \"DW Grammatiktrainer Konjunktiv II\" for practice", "Speaking: say 3 hypothetical things using würde"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read irregular forms aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Learn irregular one-word forms: hätte, wäre, könnte, müsste, dürfte, sollte", "Speaking: make 3 polite requests using könnte/hätte"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill: würde vs hätte vs könnte — when do you use which?"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record the practice dialogue, both roles", "Practice: 3 \"wenn\" hypotheticals"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — listen for würde/könnte/hätte in natural speech"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 14"]}], "resourceNote": "This is genuinely B1-level grammar in DW's course structure, so there's no dedicated A1/A2 episode to point you to. Direct grammar teaching + DW's Grammatiktrainer this week — completely normal for a jump this size.", "resources": ["Grammar reference: search \"DW Grammatiktrainer Konjunktiv II\" at learngerman.dw.com", "Immersion: Easy German video, any topic"], "grammar": [{"title": "The \"easy\" form — würde + infinitive (covers ~90% of verbs)", "rows": [["ich würde", "wir würden"], ["du würdest", "ihr würdet"], ["er/sie/es würde", "sie/Sie würden"]]}, {"title": "Irregular one-word forms — used instead of würde", "rows": [["haben → hätte", "Ich hätte gern einen Kaffee."], ["sein → wäre", "Das wäre schön."], ["können → könnte", "Könntest du mir helfen?"], ["müssen → müsste", "Ich müsste früher gehen."], ["dürfen → dürfte", "Dürfte ich etwas fragen?"], ["sollen → sollte", "Du solltest mehr schlafen."]]}], "grammarNote": "Three main uses: (1) politeness — \"Könntest du...?\" is gentler than \"Kannst du...?\"; (2) hypotheticals with wenn — \"Wenn ich Zeit hätte, würde ich mehr reisen\"; (3) wishes — \"Ich hätte gern...\" (you know this one from Week 3).", "vocab": [["Könntest du mir helfen?", "Could you help me?"], ["Ich hätte gern...", "I would like... (review)"], ["Das wäre toll/schön", "That would be great/nice"], ["Wenn ich Zeit hätte...", "If I had time..."], ["Wenn ich du wäre...", "If I were you..."], ["An deiner Stelle würde ich...", "In your place, I would..."], ["Ich würde sagen, dass...", "I would say that..."], ["Dürfte ich...?", "Might I...? (very polite)"]], "vocabNote": null, "dialogue": [["A", "Könntest du mir bei meinem Deutsch helfen?"], ["B", "Klar! Was würdest du gern üben?"], ["A", "Ich hätte gern mehr Gesprächspraxis. Wenn ich mehr Zeit hätte, würde ich jeden Tag üben."], ["B", "Das wäre eine gute Idee. An deiner Stelle würde ich einen Tandempartner suchen."], ["A", "Guter Tipp! Dürfte ich dich als Übungspartner haben?"], ["B", "Natürlich, das würde mir auch Spaß machen!"]], "speaking": ["Say three hypothetical things using würde", "Make three polite requests using könnte/dürfte/hätte gern", "Build three \"wenn... würde...\" hypotheticals", "Record the full practice dialogue, both roles"], "selfcheck": ["Form würde + infinitive correctly for any verb", "Use hätte, wäre, and könnte correctly (not \"würde haben,\" etc.)", "Make a polite request using the subjunctive", "Build a full \"wenn... würde...\" hypothetical sentence"], "milestone": null}, {"week": 14, "phase": 3, "dates": "Nov 9 – Nov 15, 2026", "startDate": "2026-11-09", "focus": "Storytelling Connectors (deshalb, obwohl, während, nachdem)", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Learn deshalb and obwohl", "Speaking: combine 3 pairs of sentences using deshalb"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read word-order notes aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Learn während and nachdem", "Speaking: combine 3 pairs using während or nachdem"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill: for each connector, verb in position 2 or at the end?"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record a short story using at least 3 connectors", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — listen for deshalb/obwohl/während/nachdem"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 15"]}], "resourceNote": "DW's B1 course has a dedicated lesson on \"während\" clauses for summarizing stories, confirming this content exists in their curriculum — but I couldn't pin down its exact episode number. Grammar-first this week, with Easy German for hearing connectors in natural use.", "resources": ["Immersion: Easy German video, any topic", "Optional: search \"DW Grammatiktrainer Konnektoren\" for extra drills"], "grammar": [{"title": "Deshalb (therefore) — verb stays in position 2", "rows": [["Es hat geregnet, deshalb bin ich zu Hause geblieben.", ""]]}, {"title": "Obwohl / während / nachdem — subordinating, verb to the end", "rows": [["Obwohl es geregnet hat, bin ich spazieren gegangen.", "although"], ["Während ich gekocht habe, hat er ferngesehen.", "while/whereas"], ["Nachdem ich gegessen hatte, bin ich ins Bett gegangen.", "after"]]}], "grammarNote": "Note on nachdem: technically pairs with Plusquamperfekt when the main clause is Perfekt/Präteritum — but using regular Perfekt after nachdem is a common simplification you'll be understood fine with. When the subordinate clause comes first, the main-clause verb immediately follows the comma.", "vocab": [["zuerst", "first"], ["dann / danach", "then / after that (review)"], ["schließlich", "finally"], ["am Ende", "in the end"], ["plötzlich", "suddenly"], ["deshalb / darum", "therefore / so"], ["obwohl", "although"], ["während", "while/whereas"], ["nachdem", "after"]], "vocabNote": null, "dialogue": [["A", "Erzähl mir von deinem Wochenende!"], ["B", "Zuerst bin ich einkaufen gegangen. Während ich eingekauft habe, hat es angefangen zu regnen."], ["A", "Oh nein! Und dann?"], ["B", "Obwohl es geregnet hat, bin ich weiter spazieren gegangen — es hat mir trotzdem Spaß gemacht. Deshalb war ich am Ende ziemlich nass!"], ["A", "Und was hast du danach gemacht?"], ["B", "Nachdem ich nach Hause gekommen war, habe ich mir einen Tee gemacht und mich ausgeruht."]], "speaking": ["Combine three pairs of sentences using deshalb", "Combine three pairs using während or nachdem, verb correctly at the end", "Tell a short story (4–6 sentences) using at least 3 different connectors", "Record yourself telling the story; check word order on each connector"], "selfcheck": ["Use deshalb with verb in position 2", "Use obwohl/während/nachdem with verb correctly at the end", "Correctly place the main-clause verb right after the comma when subordinate clause comes first", "Tell a short story using at least 3 connectors naturally"], "milestone": null}, {"week": 15, "phase": 3, "dates": "Nov 16 – Nov 22, 2026", "startDate": "2026-11-16", "focus": "Emotions, Small Talk & Natural Reactions", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 23 (Das hört sich gut an!)", "Learn positive/neutral reaction phrases", "Speaking: react to 3 pieces of made-up news out loud"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read emotion vocab aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch Folge 24 (Das meinen Sie nicht ernst!)", "Learn surprise/disbelief phrases", "Speaking: react with disbelief to 3 surprising statements"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Re-read the practice dialogue aloud, both roles"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record reacting naturally to 5 different statements", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — listen for reaction phrases"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 16"]}], "resourceNote": "A clean, confirmed pair of episodes — one for pleasant surprise, one for disbelief.", "resources": ["Nicos Weg A2 — Folge 23: Das hört sich gut an! — https://learngerman.dw.com/de/das-h%C3%B6rt-sich-gut-an/l-40573997", "Nicos Weg A2 — Folge 24: Das meinen Sie nicht ernst! — https://learngerman.dw.com/de/das-meinen-sie-nicht-ernst/l-40574313", "Immersion: Easy German video, any topic"], "grammar": [], "grammarNote": null, "vocab": [["Das hört sich gut an!", "That sounds good!"], ["Echt? / Wirklich?", "Really?"], ["Na klar! / Genau!", "Of course! / Exactly!"], ["Kein Wunder / Macht nichts", "No wonder / No big deal"], ["Schön für dich!", "Good for you!"], ["Das meinen Sie nicht ernst!", "You can't be serious!"], ["Im Ernst? / Was?!", "Seriously? / What?!"], ["Das glaube ich nicht! / Kaum zu glauben!", "I don't believe it! / Hard to believe!"], ["Keine Ahnung / Na ja... / Also...", "No idea / Well... / So..."], ["aufgeregt / genervt / überrascht", "excited/nervous / annoyed / surprised"], ["traurig / glücklich / gestresst", "sad / happy / stressed"]], "vocabNote": null, "dialogue": [["A", "Rate mal — ich habe die Stelle bekommen!"], ["B", "Echt?! Das ist ja toll, herzlichen Glückwunsch!"], ["A", "Danke! Ich bin total aufgeregt."], ["B", "Das kann ich verstehen. Wann fängst du an?"], ["A", "Nächsten Monat schon. Und stell dir vor — mein alter Kollege Tom hat auch dort angefangen letzte Woche!"], ["B", "Das meinen Sie nicht ernst! Was für ein Zufall!"], ["A", "Ich weiß, kaum zu glauben, oder?"]], "speaking": ["React to three pieces of made-up good news using positive reactions", "React to three surprising statements using disbelief phrases", "Use at least three filler words naturally in an unscripted ramble", "Record reacting to 5 mixed statements with appropriate emotion words"], "selfcheck": ["Use at least 4 different reaction phrases naturally", "React with genuine-sounding surprise or disbelief", "Use filler words without it feeling scripted", "Name at least 5 emotions correctly"], "milestone": null}, {"week": 16, "phase": 3, "dates": "Nov 23 – Nov 29, 2026", "startDate": "2026-11-23", "focus": "Phone Calls, Appointments & Formal Register", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 31 (Mit freundlichen Grüßen) — formal written register", "Learn phone call phrases", "Speaking: role-play answering the phone and stating your purpose"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read the formal/informal table aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Rewatch A1 Folge 1 (Hallo!) — notice the formal/informal distinction now", "Learn appointment-scheduling phrases", "Speaking: call to schedule/reschedule an appointment"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill: for 5 random situations, is it du or Sie?"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record the full phone call dialogue, both roles", "Prep for the Phase 3 milestone: outline a 2-minute story"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video, any topic"]}, {"day": "Sunday", "label": "buffer / rest — Phase 3 milestone", "tasks": ["Self-Check", "Phase 3 milestone: tell a 2-minute unscripted story with a listener reacting naturally"]}], "resourceNote": "Confirmed episodes for formal written register and a callback formal/informal review — but no dedicated phone-call episode. Phone vocabulary this week is direct-taught rather than episode-anchored.", "resources": ["Nicos Weg A2 — Folge 31: Mit freundlichen Grüßen (formal written closings and register) — https://learngerman.dw.com/de/mit-freundlichen-gr%C3%BC%C3%9Fen/l-40575149", "A1 Folge 1: Hallo! — worth rewatching now that you can notice the formal/informal distinction it was quietly teaching back in Week 1 — https://learngerman.dw.com/en/hallo/l-37250531", "Immersion: Easy German video, any topic"], "grammar": [{"title": "Formal vs informal — quick review", "rows": [["Greeting: Hallo! / Hi!", "Guten Tag!"], ["How are you: Wie geht's?", "Wie geht es Ihnen?"], ["Your name: Wie heißt du?", "Wie heißen Sie?"], ["Request: Kannst du...?", "Könnten Sie...?"], ["Goodbye: Tschüss!", "Auf Wiedersehen!"], ["Possessive: dein/deine", "Ihr/Ihre"]]}], "grammarNote": "Rule of thumb: Sie for strangers, professionals, and anyone significantly older; du for friends, family, and casual contexts — when in doubt, default to Sie and let the other person invite du.", "vocab": [["Hallo, hier ist [Name]", "Hi, this is [Name]"], ["Kann ich bitte mit [Name] sprechen?", "May I speak with [Name]?"], ["Ich rufe an wegen...", "I'm calling about..."], ["Einen Moment, bitte", "One moment, please"], ["Ich möchte einen Termin vereinbaren", "I'd like to schedule an appointment"], ["Passt Ihnen [Tag] um [Zeit]?", "Does [day] at [time] work for you?"], ["Ich muss den Termin leider verschieben", "I unfortunately need to reschedule"], ["Auf Wiederhören!", "Goodbye! (phone-specific)"]], "vocabNote": null, "dialogue": [["Empfang", "Guten Tag, Praxis Dr. Schmidt, was kann ich für Sie tun?"], ["A", "Guten Tag, hier ist Alex Meier. Ich möchte gern einen Termin vereinbaren."], ["Empfang", "Gern. Worum geht es?"], ["A", "Ich rufe an wegen einer Vorsorgeuntersuchung."], ["Empfang", "Passt Ihnen Donnerstag um 14 Uhr?"], ["A", "Das passt mir leider nicht — hätten Sie auch einen Termin am Freitag?"], ["Empfang", "Ja, Freitag um 10 Uhr wäre möglich."], ["A", "Perfekt, das nehme ich. Vielen Dank!"], ["Empfang", "Gern geschehen. Auf Wiederhören!"], ["A", "Auf Wiederhören!"]], "speaking": ["Role-play answering the phone and stating your purpose for calling", "Schedule an appointment, then reschedule it", "Recite the formal/informal table from memory for 5 situations", "Record the full phone call dialogue, both roles"], "selfcheck": ["Correctly switch between du and Sie forms for a given situation", "Handle a phone call: answering, stating purpose, and closing", "Schedule and reschedule an appointment", "Use \"Auf Wiederhören\" (not \"Wiedersehen\") on the phone"], "milestone": "Tell a 2-minute unscripted story about something that happened — real or invented — using Perfekt (Weeks 5–6) and storytelling connectors (Week 14), while a listener reacts naturally using Week 15's reaction phrases. This is the most demanding milestone yet: sustained, connected speech rather than short exchanges. If you can do this comfortably, you're ready for Phase 4 (relative clauses, passive voice recognition, idioms, and free conversation weeks)."}, {"week": 17, "phase": 4, "dates": "Nov 30 – Dec 6, 2026", "startDate": "2026-11-30", "focus": "Genitive Case — Part 1", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Learn the genitive article table", "Search \"DW Grammatiktrainer Genitiv\" for practice", "Speaking: say 3 possessive phrases using genitive"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read the article table aloud until automatic"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Learn the four genitive prepositions", "Speaking: make 3 sentences using während/trotz/wegen/statt + genitive"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill: genitive article for 5 random nouns"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record the practice dialogue, both roles", "Practice: describe 3 possessive relationships using genitive"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video, any topic"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 18"]}], "resourceNote": "Like a few other structural grammar points in this curriculum, the genitive doesn't have a dedicated Nicos Weg episode I could confirm. Direct grammar teaching + DW's Grammatiktrainer this week.", "resources": ["Grammar reference: search \"DW Grammatiktrainer Genitiv\" at learngerman.dw.com", "Immersion: Easy German video, any topic"], "grammar": [{"title": "Genitive articles — question word is wessen? (whose?)", "rows": [["", "Nominative | Genitive"], ["der (masc.)", "der | des (+s/es on noun)"], ["die (fem.)", "die | der"], ["das (neut.)", "das | des (+s/es on noun)"], ["die (plural)", "die | der"]]}, {"title": "Four genitive prepositions", "rows": [["während", "during"], ["trotz", "despite"], ["wegen", "because of"], ["statt (anstatt)", "instead of"]]}], "grammarNote": "der Hund des Mannes (the man's dog) — masculine nouns add -s (or -es if short/hissing sound). Während des Sommers war ich in Deutschland. Trotz des Regens sind wir spazieren gegangen.", "vocab": [["Wessen...?", "Whose...?"], ["Das ist das Buch des Lehrers", "That's the teacher's book"], ["die Farbe des Autos", "the color of the car"], ["der Name der Firma", "the name of the company"], ["während des Urlaubs", "during the vacation"], ["trotz des Problems", "despite the problem"], ["wegen des Wetters", "because of the weather"], ["statt des Kaffees", "instead of the coffee"]], "vocabNote": null, "dialogue": [["A", "Wessen Auto ist das vor dem Haus?"], ["B", "Das ist das Auto meines Nachbarn."], ["A", "Und wegen des Wetters — fahrt ihr trotzdem in den Urlaub?"], ["B", "Ja, trotz des Regens fahren wir. Während der Reise wollen wir viele Städte besuchen."], ["A", "Klingt gut! Was macht ihr statt des Fliegens — fahrt ihr mit dem Auto?"], ["B", "Genau, wir fahren lieber mit dem Auto."]], "speaking": ["Say three possessive phrases using genitive articles", "Make three sentences using während/trotz/wegen/statt + genitive", "Describe three possessive relationships using \"wessen\" and genitive answers", "Record the practice dialogue, both roles"], "selfcheck": ["Recite the genitive article table from memory", "Form a correct genitive possessive phrase (\"das Auto des Mannes\")", "Use all four genitive prepositions correctly", "Answer a \"wessen?\" question with a full genitive phrase"], "milestone": null}, {"week": 18, "phase": 4, "dates": "Dec 7 – Dec 13, 2026", "startDate": "2026-12-07", "focus": "Genitive Case — Part 2 (Spoken Alternative)", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Learn the -s rule for names", "Learn \"von + Dativ\" as the everyday spoken alternative", "Speaking: say 3 possessive phrases both ways"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read notes aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Find a short German news article and spot genitive constructions", "Speaking: rephrase 3 genitive sentences using von+Dativ"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill: which register calls for genitive vs von+Dativ?"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record the practice dialogue, both roles", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — genitive is rare in casual speech, that's the point"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 19"]}], "resourceNote": null, "resources": ["Practice activity: find any short German news article or Wikipedia paragraph and highlight every genitive construction you can spot", "Immersion: Easy German video, any topic"], "grammar": [{"title": "Spoken reality: von + Dativ replaces genitive constantly", "rows": [["Genitive (formal/written)", "von + Dativ (everyday spoken)"], ["das Auto des Mannes", "das Auto vom Mann"], ["die Farbe des Autos", "die Farbe vom Auto"], ["der Freund meiner Schwester", "der Freund von meiner Schwester"]]}], "grammarNote": "Names take -s, no apostrophe: Antons Auto (not \"Anton's\"). Use genitive prepositions (während, trotz, wegen, statt) in both speech and writing — those stay common. For plain possession, von+Dativ is what you'll actually hear day to day; genitive possessives lean written/formal.", "vocab": [["Antons Auto / das Auto von Anton", "Anton's car (both correct)"], ["der Freund von meiner Schwester", "my sister's friend (spoken)"], ["der Freund meiner Schwester", "my sister's friend (written/formal)"], ["das ist typisch für...", "that's typical of..."], ["im Laufe des Tages", "over the course of the day"], ["am Ende des Monats", "at the end of the month"], ["innerhalb einer Woche", "within a week"]], "vocabNote": null, "dialogue": [["A", "Ist das Marias Fahrrad?"], ["B", "Nein, das ist das Fahrrad von meinem Bruder."], ["A", "Ach so! Und wessen Tasche liegt dort drüben?"], ["B", "Das ist die Tasche von der Frau neben der Tür — glaube ich."], ["A", "Im Laufe des Tages hole ich sie ab, falls sie sie vergisst."], ["B", "Gute Idee, das wäre nett von dir."]], "speaking": ["Say three possessive phrases both ways: genitive, then von+Dativ", "Find and rephrase 3 genitive sentences from a real text using von+Dativ", "Use at least 2 genitive time expressions", "Record the practice dialogue, both roles"], "selfcheck": ["Form names correctly in genitive (Antons, not Anton's)", "Convert a genitive possessive to von+Dativ and back", "Recognize genitive constructions when reading real German text", "Know when to reach for genitive vs von+Dativ in your own speech"], "milestone": null}, {"week": 19, "phase": 4, "dates": "Dec 14 – Dec 20, 2026", "startDate": "2026-12-14", "focus": "Passive Voice — Recognition, Part 1", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Learn passive formation with werden", "Search \"DW Grammatiktrainer Passiv\" for practice", "Translate 3 passive sentences into English to confirm understanding"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read examples aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Practice recognizing passive in real text — recipes and instructions are full of it", "Speaking: read the practice dialogue aloud, focusing on the pattern"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Drill: spot the passive construction in 5 sample sentences"]}, {"day": "Friday", "label": "session 3", "tasks": ["Find a simple German recipe and identify every passive construction", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video, or better, a cooking/instructional video if you can find one"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 20"]}], "resourceNote": "No dedicated Nicos Weg episode confirmed. Direct teaching + DW's Grammatiktrainer — but remember the goal is recognition, not production, so the bar this week is lower than usual.", "resources": ["Grammar reference: search \"DW Grammatiktrainer Passiv\" at learngerman.dw.com", "Practice: search for a simple German recipe (\"einfaches Rezept\" + a dish) — recipes are written almost entirely in passive", "Immersion: Easy German video, any topic"], "grammar": [{"title": "Active vs passive", "rows": [["Der Koch kocht das Essen.", "Das Essen wird gekocht."], ["Man repariert das Auto.", "Das Auto wird repariert."]]}, {"title": "Werden — present tense (review from Week 11)", "rows": [["ich werde", "wir werden"], ["du wirst", "ihr werdet"], ["es wird", "sie werden"]]}], "grammarNote": "Passive = [conjugated werden] + ... + [Partizip II at the end]. You already know werden (Futur I, Week 11) and Partizip II (Perfekt, Weeks 5–6) — passive just combines them differently. Passive is everywhere in news, recipes, and instructions: \"Der Verdächtige wurde festgenommen\" (The suspect was arrested).", "vocab": [["Das Gemüse wird geschnitten", "The vegetables are cut"], ["Die Zwiebeln werden gebraten", "The onions are fried"], ["Der Brief wird geschrieben", "The letter is being written"], ["Die Tür wird geöffnet", "The door is opened"], ["Das Auto wird repariert", "The car is being repaired"], ["Die Show wird gezeigt", "The show is being shown"], ["Es wird gesagt, dass...", "It is said that..."]], "vocabNote": null, "dialogue": [["A", "Wie macht man diese Suppe?"], ["B", "Zuerst werden die Zwiebeln geschnitten. Dann werden sie in Öl gebraten."], ["A", "Und danach?"], ["B", "Danach wird Wasser hinzugefügt, und die Suppe wird 20 Minuten gekocht."], ["A", "Klingt einfach! Wird noch etwas hinzugefügt?"], ["B", "Am Ende wird noch Salz und Pfeffer hinzugefügt. Fertig!"]], "speaking": ["Translate three passive sentences into English", "Read the practice dialogue aloud, focusing on the werden + participle pattern", "Find a simple recipe and identify every passive construction", "Say two passive sentences about a process you know well"], "selfcheck": ["Recognize passive voice when reading (werden + participle at the end)", "Correctly translate a passive sentence into English", "Understand why passive shifts focus away from who's doing the action", "Spot passive constructions in a real recipe or instructions"], "milestone": null}, {"week": 20, "phase": 4, "dates": "Dec 21 – Dec 27, 2026", "startDate": "2026-12-21", "focus": "Passive Voice — Recognition, Part 2", "days": [{"day": "Monday", "label": "session 1 — keep it short", "tasks": ["Learn passive in Perfekt (recognition only)", "Read the examples aloud once"]}, {"day": "Tuesday", "label": "optional review", "tasks": ["Anki review if time allows; skip if the holidays are busy"]}, {"day": "Wednesday", "label": "session 2 — keep it short", "tasks": ["Learn Zustandspassiv vs Vorgangspassiv", "Read examples aloud"]}, {"day": "Thursday", "label": "optional review", "tasks": ["Anki only, if time allows"]}, {"day": "Friday", "label": "session 3 — keep it short", "tasks": ["Find one German news headline and identify the passive construction", "Light review of Weeks 19–20 together"]}, {"day": "Saturday", "label": "immersion (or skip if busy)", "tasks": ["Easy German video, any topic"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 21 — a lighter check given the holiday overlap"]}], "resourceNote": "This week overlaps the holidays — treat it as light and flexible rather than skipped. Shorter sessions are completely fine.", "resources": ["Practice: search a German news site (e.g. \"tagesschau.de\") and skim headlines for passive constructions", "Immersion: Easy German video, any topic, whenever you have a spare 10 minutes"], "grammar": [{"title": "Vorgangspassiv (process) vs Zustandspassiv (state)", "rows": [["Type", "Formation | Meaning"], ["Vorgangspassiv", "werden + Partizip II | Die Tür wird geöffnet. (being opened)"], ["Zustandspassiv", "sein + Partizip II | Die Tür ist geöffnet. (now open)"]]}], "grammarNote": "Passive Perfekt: Das Auto ist repariert worden — note the irregular short form \"worden\" (not \"geworden\"). Recognition only for now. You've likely already used Zustandspassiv intuitively — \"Der Laden ist geschlossen\" describes a state, not an action happening.", "vocab": [["Der Verdächtige wurde festgenommen", "The suspect was arrested"], ["Das Geschäft ist geschlossen", "The store is closed (state)"], ["Die Straße wird repariert", "The street is being repaired (process)"], ["Es wurde entschieden, dass...", "It was decided that..."], ["Das Produkt wird nicht mehr hergestellt", "The product is no longer made"]], "vocabNote": null, "dialogue": [["Headline-style", "Neue Regeln wurden diese Woche beschlossen."], ["Recipe-style", "Nachdem die Suppe gekocht worden ist, wird sie serviert."], ["Everyday", "Der Laden ist heute geschlossen — ich glaube, er wird renoviert."]], "speaking": ["Read the practice examples aloud once", "Find one real German news headline and identify its passive construction", "Say one sentence distinguishing Vorgangspassiv from Zustandspassiv for the same situation"], "selfcheck": ["Recognize passive Perfekt with \"worden\"", "Tell Vorgangspassiv and Zustandspassiv apart when reading", "Spot at least one passive construction in a real news headline"], "milestone": null}, {"week": 21, "phase": 4, "dates": "Dec 28, 2026 – Jan 3, 2027", "startDate": "2026-12-28", "focus": "Idioms & Colloquial Speech — Part 1", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Watch Folge 69 (Einfach super!)", "Learn 4–5 idioms", "Speaking: use 2 new idioms in sentences about your own life"]}, {"day": "Tuesday", "label": "optional review", "tasks": ["Anki review if time allows"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch Folge 70 (Das regt mich auf!)", "Learn the remaining idioms", "Speaking: react to a situation using an idiom"]}, {"day": "Thursday", "label": "optional review", "tasks": ["Anki only"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record the practice dialogue, both roles", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Easy German video — listen for idioms you now recognize"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 22"]}], "resourceNote": "This week still overlaps the holidays — keep it light if needed, same as Week 20.", "resources": ["Nicos Weg A2 — Folge 69: Einfach super! — https://learngerman.dw.com/de/einfach-super/l-40603512", "Nicos Weg A2 — Folge 70: Das regt mich auf! — https://learngerman.dw.com/de/das-regt-mich-auf/l-40601735", "A confirmed, genuinely idiom/emotion-focused pair of episodes.", "Immersion: Easy German video, any topic"], "grammar": [], "grammarNote": null, "vocab": [["die Nase voll haben", "to have a full nose → to be fed up"], ["Schwein haben", "to have pig → to be lucky"], ["das ist mir Wurst", "that's sausage to me → I don't care either way"], ["ins Wasser fallen", "to fall into the water → to fall through (plans)"], ["die Daumen drücken", "to press thumbs → to keep fingers crossed"], ["einen Bock schießen", "to shoot a buck → to make a mistake/blunder"], ["unter der Hand", "under the hand → secretly, off the record"], ["jemandem auf die Nerven gehen", "to go on someone's nerves → to annoy someone"]], "vocabNote": "These are genuinely common — you'll hear several of these regularly once you're listening for them.", "dialogue": [["A", "Wie war dein Tag?"], ["B", "Ehrlich gesagt, ich habe die Nase voll. Mein Plan für heute ist total ins Wasser gefallen."], ["A", "Oh nein, was ist passiert?"], ["B", "Ich hatte ein wichtiges Meeting, aber es wurde abgesagt. Und dann habe ich auch noch einen Bock geschossen und die falsche Datei geschickt!"], ["A", "Das tut mir leid. Aber hey, morgen hast du bestimmt mehr Schwein."], ["B", "Hoffentlich! Drück mir die Daumen für morgen."], ["A", "Klar, mach ich!"]], "speaking": ["Use two new idioms in sentences about your own life", "React to a made-up bad-day scenario using at least 2 idioms", "Record the practice dialogue, both roles", "Explain one idiom's literal vs actual meaning, as if teaching someone"], "selfcheck": ["Use at least 4 idioms correctly in context", "Understand the difference between an idiom's literal and actual meaning", "Recognize at least 2 idioms when heard in the Easy German video", "React naturally to a situation using an idiom instead of a plain description"], "milestone": null}, {"week": 22, "phase": 4, "dates": "Jan 4 – Jan 10, 2027", "startDate": "2027-01-04", "focus": "Filler Words & Modal Particles", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Learn also, halt, and eigentlich", "Speaking: use each of the three in a sentence, out loud"]}, {"day": "Tuesday", "label": "review day", "tasks": ["Anki review", "Re-read notes aloud"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Learn sozusagen, quasi, na, and tja", "Speaking: use 3 of this week's particles in an unscripted 1-minute ramble"]}, {"day": "Thursday", "label": "review day", "tasks": ["Anki only", "Listen to 2 minutes of Easy German and count filler words you catch"]}, {"day": "Friday", "label": "session 3", "tasks": ["Speaking: record the practice dialogue, both roles", "Full run-through of speaking tasks"]}, {"day": "Saturday", "label": "immersion (the main event this week)", "tasks": ["Watch 2 Easy German videos instead of the usual 1 — actively listen for particles"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Self-Check before Week 23 (free conversation begins!)"]}], "resourceNote": "Modal particles are notoriously hard to teach from a textbook — they carry tone/attitude rather than clear meaning, and are best absorbed by ear. This week leans heavily on immersion rather than drilling.", "resources": ["Immersion is the primary resource this week — two Easy German videos instead of one", "Optional light context: Nicos Weg A1 Folge 59 (Das passt gut!) and Folge 60 (Schick!) — Folge 59: https://learngerman.dw.com/en/das-passt-gut/l-37661740; Folge 60: https://learngerman.dw.com/en/schick/l-37661765"], "grammar": [], "grammarNote": null, "vocab": [["also", "\"so/well\" — transitions, summarizes: Also, ich glaube, wir sollten gehen."], ["halt", "\"just/simply\" — resigned acceptance: Das ist halt so."], ["eigentlich", "\"actually\" — mild correction/reconsideration: Eigentlich wollte ich bleiben."], ["sozusagen", "\"so to speak\" — hedges a description: Er ist sozusagen mein Chef."], ["quasi", "\"basically/practically\" — casual approximation: Das ist quasi dasselbe."], ["na", "\"well\" — filler start, mild resignation/prompting: Na, wie geht's?"], ["tja", "\"well.../hmm\" — resigned or awkward pause: Tja, was soll man machen?"]], "vocabNote": "Don't overthink these — the goal isn't perfect production this week, it's recognizing them so they stop feeling like noise when you hear native speech.", "dialogue": [["A", "Na, wie war dein Wochenende?"], ["B", "Ach, eigentlich wollte ich wandern gehen, aber es hat geregnet. Tja, was soll man machen."], ["A", "Das ist halt Pech. Und was hast du dann gemacht?"], ["B", "Ich bin quasi den ganzen Tag zu Hause geblieben und habe Filme geschaut. Also, es war nicht schlimm, nur ein bisschen langweilig."], ["A", "Verstehe. Nächstes Wochenende klappt es sozusagen bestimmt besser!"]], "speaking": ["Use also, halt, and eigentlich each in a sentence, out loud", "Do a 1-minute unscripted ramble working in at least 3 of this week's particles", "Record the practice dialogue, both roles", "Watch 2 minutes of German video and count modal particles you catch"], "selfcheck": ["Explain the function (not literal translation) of at least 5 modal particles", "Use at least 3 naturally in your own unscripted speech", "Recognize modal particles in fast native speech without them throwing you off", "Not feel obligated to translate them — that's the actual sign of progress here"], "milestone": null}, {"week": 23, "phase": 4, "dates": "Jan 11 – Jan 17, 2027", "startDate": "2027-01-11", "focus": "Free Conversation — Week 1", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Read one short German news-for-learners article", "Speaking: summarize what you read, 3–4 sentences"]}, {"day": "Tuesday", "label": "light review", "tasks": ["Anki review of anything still shaky from Weeks 17–22", "No new material"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch one episode of a German show/series with German subtitles", "Speaking: describe what happened, out loud"]}, {"day": "Thursday", "label": "light review", "tasks": ["Anki only, or skip if everything feels solid"]}, {"day": "Friday", "label": "session 3", "tasks": ["Free conversation session with a tutor/partner (30+ min) on any topic — or record yourself talking through your week unscripted"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Watch/listen to whatever German content genuinely interests you — the reward round, not an assignment"]}, {"day": "Sunday", "label": "buffer / rest", "tasks": ["Light self-check — this week isn't about mastering anything new"]}], "resourceNote": "No new grammar this week. The goal is simply using everything you've built over the last 22 weeks in real, unstructured German — reading, watching, and talking.", "resources": ["News for learners: search \"Nachrichtenleicht\" (Deutschlandfunk's simplified news) or \"Deutsche Welle langsam gesprochene Nachrichten\"", "A German show: anything with German audio + German subtitles", "Free conversation: iTalki/Tandem session, or a language exchange partner, zero fixed agenda", "Journaling: write a few sentences in German about your day"], "grammar": [], "grammarNote": null, "vocab": [["Wie sagt man...?", "How do you say...?"], ["Was bedeutet...?", "What does...mean?"], ["Kannst du das wiederholen?", "Can you repeat that?"], ["Langsamer, bitte", "Slower, please"], ["Ich meine damit, dass...", "What I mean is..."], ["Moment, ich muss nachdenken", "Hold on, I need to think"], ["Wie war das noch mal?", "What was that again?"]], "vocabNote": "Even advanced speakers use these constantly — reaching for them naturally (instead of switching to English) keeps a conversation in German longer.", "dialogue": [], "speaking": ["Did you read something and understand the gist without translating every word?", "Did you watch something and follow the general story?", "Did you have a real conversation without pre-scripting your sentences?", "Did you reach for a clarification phrase instead of switching to English when stuck?"], "selfcheck": ["There's no grammar bar to clear this week — the bar is simply \"did I use German for real things.\""], "milestone": null}, {"week": 24, "phase": 4, "dates": "Jan 18 – Jan 24, 2027", "startDate": "2027-01-18", "focus": "Free Conversation — Week 2 & Final Milestone", "days": [{"day": "Monday", "label": "session 1", "tasks": ["Read one more news-for-learners article or short story", "Speaking: summarize it, then give your opinion on it"]}, {"day": "Tuesday", "label": "light review", "tasks": ["Anki review of anything still shaky from the whole curriculum"]}, {"day": "Wednesday", "label": "session 2", "tasks": ["Watch another episode of a German show/series", "Speaking: retell what happened using past tense + a storytelling connector"]}, {"day": "Thursday", "label": "light review", "tasks": ["Think through what you'll talk about in Friday's milestone conversation — topics, not scripted sentences"]}, {"day": "Friday", "label": "session 3 — Final Milestone", "tasks": ["20-minute conversation with a tutor/partner (or long recorded solo session): an opinion, a story, and a hypothetical"]}, {"day": "Saturday", "label": "immersion", "tasks": ["Whatever German content you've genuinely enjoyed most this phase — revisit it"]}, {"day": "Sunday", "label": "reflect", "tasks": ["Compare Week 1's milestone (3-minute conversation about your day) to this week's — that's the real measure of progress"]}], "resourceNote": "The last week of the curriculum. Same free-conversation approach as Week 23, building up to a real, sustained conversation that pulls together everything from all 24 weeks.", "resources": ["Erzähl mir von etwas Interessantem, das dir letzte Woche passiert ist.", "Was würdest du machen, wenn du ein Jahr frei hättest?", "Was hältst du von [ein aktuelles Thema]?", "Wenn du in einem anderen Land leben könntest, wo wäre das?"], "grammar": [{"title": "What the final milestone draws on", "rows": [["Skill", "From"], ["Greetings, basic exchange", "Phase 1"], ["Past tense (Perfekt) for telling a story", "Weeks 5–6"], ["Modal verbs for opinions/obligations", "Week 7"], ["Comparatives, giving an opinion", "Weeks 9–10"], ["Subjunctive II for hypotheticals", "Week 13"], ["Storytelling connectors", "Week 14"], ["Natural reactions and small talk", "Week 15"], ["Idioms and modal particles for a natural feel", "Weeks 21–22"]]}], "grammarNote": "You don't need to consciously reach for all of these — if the curriculum has done its job, they should show up naturally because they've become part of how you actually speak now, not a checklist you're running through mid-sentence.", "vocab": [["Erzähl mir von etwas Interessantem, das dir letzte Woche passiert ist.", "Tell me about something interesting that happened to you last week."], ["Was würdest du machen, wenn du ein Jahr frei hättest?", "What would you do if you had a year off?"], ["Was hältst du von [ein aktuelles Thema]?", "What do you think of [a current topic]?"], ["Wenn du in einem anderen Land leben könntest, wo wäre das?", "If you could live in another country, where would that be?"]], "vocabNote": "A few conversation starters, if you want them for Friday's milestone.", "dialogue": [], "speaking": ["Can you sustain 20 minutes of conversation without switching to English?", "Can you tell a coherent story in the past tense with connectors?", "Can you express and defend an opinion?", "Can you build a hypothetical with subjunctive?"], "selfcheck": ["Do reactions, filler words, and small talk feel natural rather than effortful?"], "milestone": "Curriculum Complete: If this feels comfortable: you've completed the full six-month curriculum. From here, the honest next step isn't a Phase 5 — it's sustained real-world use: regular conversation practice, more challenging content (native-level shows, books, podcasts), and simply living in the language as much as your circumstances allow. Structured curricula get you to conversational fluency; everything past this point is mileage."}]</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   "use strict";
@@ -393,9 +414,17 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   const STATE_DEFAULTS = {tasks:{}, notes:{}, lastWeek:null, lastTab:'days', collections:[], cards:[], studyDirection:'de'};
   function migrateCards(state){
     state.cards = (state.cards||[]).map(c => {
+      let card = c;
       if(c.de === undefined || c.en === undefined){
-        return {id: c.id, collectionId: c.collectionId, de: c.front||'', en: c.back||''};
+        card = {id: c.id, collectionId: c.collectionId, de: c.front||'', en: c.back||''};
       }
+      if(card.level === undefined) card.level = 0;
+      if(card.dueAt === undefined) card.dueAt = null; // null/unset = never studied, always due
+      if(card.updatedAt === undefined) card.updatedAt = Date.now();
+      return card;
+    });
+    state.collections = (state.collections||[]).map(c => {
+      if(c.updatedAt === undefined) c.updatedAt = Date.now();
       return c;
     });
     return state;
@@ -410,8 +439,155 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   }
   let STATE = loadState();
   function saveState(){
+    STATE.progressUpdatedAt = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+    scheduleCloudPush();
   }
+
+  // ---------- Supabase sync ----------
+  // Local storage stays the source of truth for instant loads and offline use.
+  // Supabase is a sync target: every save schedules a debounced background push,
+  // and on sign-in (or app load, if already signed in) a pull-and-merge brings in
+  // anything changed on other devices. Last-write-wins per row via updatedAt —
+  // fine for one person across a couple of devices, not built for heavy conflicts.
+  const SUPABASE_URL = 'https://ltcukmqocxwfbvlsovnj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0Y3VrbXFvY3h3ZmJ2bHNvdm5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDMxMDAsImV4cCI6MjA5NDQxOTEwMH0.vViIrmuOEf8Hxw_xnCj3UnM0EqtFe-Uc-leeA9ULM_k';
+  const sb = (window.supabase && window.supabase.createClient)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+  let CURRENT_USER = null;
+  let syncPushTimer = null;
+
+  function scheduleCloudPush(){
+    if(!sb || !CURRENT_USER) return;
+    if(syncPushTimer) clearTimeout(syncPushTimer);
+    syncPushTimer = setTimeout(pushToCloud, 1500);
+  }
+
+  async function pushToCloud(){
+    if(!sb || !CURRENT_USER) return;
+    try{
+      const cols = (STATE.collections||[]).map(c => ({
+        id: c.id, user_id: CURRENT_USER.id, name: c.name,
+        updated_at: new Date(c.updatedAt || Date.now()).toISOString()
+      }));
+      const cards = (STATE.cards||[]).map(c => ({
+        id: c.id, user_id: CURRENT_USER.id, collection_id: c.collectionId,
+        de: c.de || '', en: c.en || '', level: c.level || 0,
+        due_at: c.dueAt ? new Date(c.dueAt).toISOString() : null,
+        updated_at: new Date(c.updatedAt || Date.now()).toISOString()
+      }));
+      if(cols.length) await sb.from('german_collections').upsert(cols);
+      if(cards.length) await sb.from('german_cards').upsert(cards);
+      await sb.from('german_progress').upsert({
+        user_id: CURRENT_USER.id,
+        tasks: STATE.tasks || {},
+        notes: STATE.notes || {},
+        last_week: STATE.lastWeek,
+        last_tab: STATE.lastTab,
+        study_direction: STATE.studyDirection || 'de',
+        updated_at: new Date(STATE.progressUpdatedAt || Date.now()).toISOString()
+      });
+    } catch(e){ console.warn('cloud sync push failed', e); }
+  }
+
+  async function cloudDelete(table, ids){
+    if(!sb || !CURRENT_USER || !ids || !ids.length) return;
+    try{ await sb.from(table).delete().in('id', ids); } catch(e){ /* best effort — a later push can't resurrect it either way */ }
+  }
+
+  async function pullAndMerge(){
+    if(!sb || !CURRENT_USER) return;
+    try{
+      const [colsRes, cardsRes, progRes] = await Promise.all([
+        sb.from('german_collections').select('*').eq('user_id', CURRENT_USER.id),
+        sb.from('german_cards').select('*').eq('user_id', CURRENT_USER.id),
+        sb.from('german_progress').select('*').eq('user_id', CURRENT_USER.id).maybeSingle()
+      ]);
+
+      const localColsById = new Map((STATE.collections||[]).map(c => [c.id, c]));
+      (colsRes.data || []).forEach(rc => {
+        const remoteUpdated = new Date(rc.updated_at).getTime();
+        const local = localColsById.get(rc.id);
+        if(!local || remoteUpdated > (local.updatedAt || 0)){
+          localColsById.set(rc.id, {id: rc.id, name: rc.name, updatedAt: remoteUpdated});
+        }
+      });
+      STATE.collections = Array.from(localColsById.values());
+
+      const localCardsById = new Map((STATE.cards||[]).map(c => [c.id, c]));
+      (cardsRes.data || []).forEach(rc => {
+        const remoteUpdated = new Date(rc.updated_at).getTime();
+        const local = localCardsById.get(rc.id);
+        if(!local || remoteUpdated > (local.updatedAt || 0)){
+          localCardsById.set(rc.id, {
+            id: rc.id, collectionId: rc.collection_id, de: rc.de || '', en: rc.en || '',
+            level: rc.level || 0, dueAt: rc.due_at ? new Date(rc.due_at).getTime() : null,
+            updatedAt: remoteUpdated
+          });
+        }
+      });
+      STATE.cards = Array.from(localCardsById.values());
+
+      const remoteProg = progRes.data;
+      if(remoteProg){
+        const remoteUpdated = new Date(remoteProg.updated_at).getTime();
+        if(remoteUpdated > (STATE.progressUpdatedAt || 0)){
+          STATE.tasks = remoteProg.tasks || {};
+          STATE.notes = remoteProg.notes || {};
+          STATE.lastWeek = remoteProg.last_week;
+          STATE.lastTab = remoteProg.last_tab;
+          STATE.studyDirection = remoteProg.study_direction || STATE.studyDirection || 'de';
+        }
+        STATE.progressUpdatedAt = Math.max(remoteUpdated, STATE.progressUpdatedAt || 0);
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); // skip scheduleCloudPush — we just pulled, nothing new to push yet
+    } catch(e){ console.warn('cloud sync pull failed', e); }
+  }
+
+  // ---------- auth ----------
+  function showAuthOverlay(){ document.getElementById('authOverlay').classList.remove('hidden'); }
+  function hideAuthOverlay(){ document.getElementById('authOverlay').classList.add('hidden'); }
+
+  async function initAuthAndBoot(){
+    if(!sb){ bootApp(); return; } // SDK failed to load (offline on first-ever visit, etc.) — just run locally
+    const { data } = await sb.auth.getSession();
+    if(data && data.session && data.session.user){
+      CURRENT_USER = data.session.user;
+      await pullAndMerge();
+      bootApp();
+      return;
+    }
+    // no session — ask, but don't block: they can skip and use it locally
+    showAuthOverlay();
+    const emailEl = document.getElementById('authEmail');
+    const passEl = document.getElementById('authPassword');
+    const errEl = document.getElementById('authError');
+
+    async function handleAuth(mode){
+      errEl.textContent = '';
+      const email = emailEl.value.trim();
+      const password = passEl.value;
+      if(!email || !password){ errEl.textContent = 'Enter an email and password.'; return; }
+      const fn = mode === 'signup' ? sb.auth.signUp({ email, password }) : sb.auth.signInWithPassword({ email, password });
+      const { data: authData, error } = await fn;
+      if(error){ errEl.textContent = error.message; return; }
+      if(authData && authData.user){
+        CURRENT_USER = authData.user;
+        hideAuthOverlay();
+        await pullAndMerge();
+        bootApp();
+      } else {
+        errEl.textContent = 'Check your email to confirm your account, then sign in.';
+      }
+    }
+    document.getElementById('authSignInBtn').onclick = () => handleAuth('signin');
+    document.getElementById('authSignUpBtn').onclick = () => handleAuth('signup');
+    document.getElementById('authSkipBtn').onclick = () => { hideAuthOverlay(); bootApp(); };
+  }
+
 
   // ---------- flashcards data ----------
   function genId(prefix){
@@ -428,8 +604,32 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   }
   function collectionCardCount(id){ return (STATE.cards||[]).filter(c => c.collectionId === id).length; }
   function getCardsFor(collectionIds){ return (STATE.cards||[]).filter(c => collectionIds.includes(c.collectionId)); }
+
+  // ---------- spaced repetition ----------
+  // Leitner-style: each "Got it" bumps the card up a level and pushes it further out;
+  // any "Missed it" resets straight back to level 0, due again tomorrow — no matter how
+  // high it had climbed. New/never-studied cards (dueAt: null) are always due.
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const SR_INTERVAL_DAYS = [1, 3, 7, 14, 30]; // interval after reaching level 1,2,3,4,5 (caps here)
+  function isCardDue(c){
+    return !c.dueAt || c.dueAt <= Date.now();
+  }
+  function dueCardsFor(collectionIds){ return getCardsFor(collectionIds).filter(isCardDue); }
+  function dueCountFor(collectionId){ return dueCardsFor([collectionId]).length; }
+  function totalDueCount(){ return (STATE.cards||[]).filter(isCardDue).length; }
+  function recordStudyResult(card, gotIt){
+    if(gotIt){
+      card.level = Math.min((card.level||0) + 1, SR_INTERVAL_DAYS.length);
+      card.dueAt = Date.now() + SR_INTERVAL_DAYS[card.level - 1] * DAY_MS;
+    } else {
+      card.level = 0;
+      card.dueAt = Date.now() + DAY_MS;
+    }
+    card.updatedAt = Date.now();
+    saveState();
+  }
   function addCollection(name){
-    const col = {id: genId('col-'), name: name.trim()};
+    const col = {id: genId('col-'), name: name.trim(), updatedAt: Date.now()};
     STATE.collections = STATE.collections || [];
     STATE.collections.push(col);
     saveState();
@@ -439,22 +639,25 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     let col = getCollections().find(c => c.name.toLowerCase() === name.toLowerCase());
     if(!col){
       STATE.collections = STATE.collections || [];
-      col = {id: genId('col-'), name};
+      col = {id: genId('col-'), name, updatedAt: Date.now()};
       STATE.collections.push(col);
     }
     return col;
   }
   function renameCollection(id, name){
     const col = findCollection(id);
-    if(col){ col.name = name.trim(); saveState(); }
+    if(col){ col.name = name.trim(); col.updatedAt = Date.now(); saveState(); }
   }
   function deleteCollection(id){
     STATE.collections = getCollections().filter(c => c.id !== id);
+    const removedCardIds = (STATE.cards||[]).filter(c => c.collectionId === id).map(c => c.id);
     STATE.cards = (STATE.cards||[]).filter(c => c.collectionId !== id);
     saveState();
+    cloudDelete('german_collections', [id]);
+    if(removedCardIds.length) cloudDelete('german_cards', removedCardIds);
   }
   function addCard(collectionId, de, en){
-    const card = {id: genId('card-'), collectionId, de: (de||'').trim(), en: (en||'').trim()};
+    const card = {id: genId('card-'), collectionId, de: (de||'').trim(), en: (en||'').trim(), level: 0, dueAt: null, updatedAt: Date.now()};
     STATE.cards = STATE.cards || [];
     STATE.cards.push(card);
     saveState();
@@ -462,11 +665,12 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   }
   function updateCard(id, de, en){
     const c = (STATE.cards||[]).find(c => c.id === id);
-    if(c){ c.de = (de||'').trim(); c.en = (en||'').trim(); saveState(); }
+    if(c){ c.de = (de||'').trim(); c.en = (en||'').trim(); c.updatedAt = Date.now(); saveState(); }
   }
   function deleteCard(id){
     STATE.cards = (STATE.cards||[]).filter(c => c.id !== id);
     saveState();
+    cloudDelete('german_cards', [id]);
   }
   function shuffle(arr){
     for(let i=arr.length-1;i>0;i--){
@@ -877,6 +1081,126 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     return `<button class="speak-btn" ${dataAttr} title="Play pronunciation">🔊</button>`;
   }
 
+  // plays German text (manifest clip, or browser TTS fallback) and resolves when it finishes —
+  // used for chaining "native, then your own recording" in the comparison feature
+  function playGermanAsync(text){
+    return new Promise((resolve) => {
+      stopCurrentAudio();
+      const filename = AUDIO_MANIFEST && AUDIO_MANIFEST.get(text);
+      if(filename){
+        const audio = new Audio('./audio/' + filename);
+        currentAudioEl = audio;
+        audio.onended = () => { currentAudioEl = null; resolve(); };
+        audio.onerror = () => { currentAudioEl = null; speakWithBrowserTTSAsync(text).then(resolve); };
+        audio.play().catch(() => { currentAudioEl = null; speakWithBrowserTTSAsync(text).then(resolve); });
+      } else {
+        speakWithBrowserTTSAsync(text).then(resolve);
+      }
+    });
+  }
+
+  function speakWithBrowserTTSAsync(text){
+    return new Promise((resolve) => {
+      if(!window.speechSynthesis){ resolve(); return; }
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'de-DE';
+      const germanVoice = getGermanVoice();
+      if(germanVoice) utter.voice = germanVoice;
+      utter.onend = resolve;
+      utter.onerror = resolve;
+      window.speechSynthesis.speak(utter);
+    });
+  }
+
+  function playBlobAsync(blob){
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAudioEl = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); currentAudioEl = null; resolve(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); currentAudioEl = null; resolve(); };
+      audio.play().catch(() => { URL.revokeObjectURL(url); currentAudioEl = null; resolve(); });
+    });
+  }
+
+  // ---------- download all pronunciation audio for offline use ----------
+  // Just fetching each file is enough — sw.js's fetch handler already caches
+  // any successful same-origin GET, the exact mechanism that already caches
+  // clips lazily as they're played. This just walks the whole manifest up
+  // front instead of waiting for each clip to be tapped once.
+  let offlineDlCancelled = false;
+
+  async function downloadAllAudioOffline(){
+    if(!AUDIO_MANIFEST || AUDIO_MANIFEST.size === 0){
+      alert("The audio list hasn't finished loading yet — give it a moment and try again.");
+      return;
+    }
+    offlineDlCancelled = false;
+    const filenames = Array.from(new Set(AUDIO_MANIFEST.values()));
+    const total = filenames.length;
+    showOfflineDlModal(total);
+
+    let done = 0, failed = 0;
+    let idx = 0;
+    const CONCURRENCY = 6;
+
+    async function worker(){
+      while(idx < filenames.length){
+        if(offlineDlCancelled) return;
+        const filename = filenames[idx++];
+        try{
+          const res = await fetch('./audio/' + filename);
+          if(!res.ok) failed++;
+        } catch(e){ failed++; }
+        done++;
+        updateOfflineDlProgress(done, total, failed);
+      }
+    }
+    await Promise.all(Array.from({length: CONCURRENCY}, worker));
+    finishOfflineDlModal(done, total, failed, offlineDlCancelled);
+  }
+
+  function showOfflineDlModal(total){
+    const overlay = document.createElement('div');
+    overlay.className = 'recorder-overlay';
+    overlay.id = 'offlineDlOverlay';
+    overlay.innerHTML = `
+      <div class="recorder-modal">
+        <div class="rec-task">Downloading pronunciation audio for offline use</div>
+        <div class="progress-bar" style="margin-bottom:10px"><div class="progress-bar-fill" id="offlineDlBar" style="width:0%"></div></div>
+        <div class="rec-status" id="offlineDlStatus">0 of ${total}</div>
+        <div class="rec-actions">
+          <button class="continue-btn" id="offlineDlCancelBtn" style="background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)"><span>Cancel</span></button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('offlineDlCancelBtn').onclick = () => { offlineDlCancelled = true; };
+  }
+
+  function updateOfflineDlProgress(done, total, failed){
+    const bar = document.getElementById('offlineDlBar');
+    const status = document.getElementById('offlineDlStatus');
+    if(bar) bar.style.width = Math.round((done / total) * 100) + '%';
+    if(status) status.textContent = `${done} of ${total}${failed ? ' · ' + failed + ' failed' : ''}`;
+  }
+
+  function finishOfflineDlModal(done, total, failed, cancelled){
+    const overlay = document.getElementById('offlineDlOverlay');
+    if(!overlay) return;
+    const modal = overlay.querySelector('.recorder-modal');
+    const heading = cancelled ? 'Cancelled' : (failed > 0 ? 'Done, with a few misses' : 'All set!');
+    const msg = cancelled
+      ? `Stopped after ${done} of ${total}. Whatever downloaded is already available offline — run it again anytime to pick up the rest.`
+      : (failed > 0
+        ? `${done - failed} of ${total} clips downloaded. ${failed} failed, probably a connection hiccup — run it again to retry just those.`
+        : `All ${total} pronunciation clips are now saved for offline use.`);
+    modal.innerHTML = `
+      <div class="rec-task">${escapeHtml(heading)}</div>
+      <div style="font-size:12.5px;opacity:.8;margin-bottom:16px">${escapeHtml(msg)}</div>
+      <button class="continue-btn" id="offlineDlCloseBtn" style="background:var(--green)"><span>Close</span></button>`;
+    document.getElementById('offlineDlCloseBtn').onclick = () => overlay.remove();
+  }
+
   function recordBtnHtml(dataAttr){
     return `<button class="record-task-btn" ${dataAttr} title="Record yourself">🎙️<span class="rec-badge"></span></button>`;
   }
@@ -972,6 +1296,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   let recTimerInterval = null;
   let recStartedAt = null;
   let recBlobUrl = null;
+  let currentTakes = [];
 
   function formatRecTime(ms){
     const s = Math.floor(ms/1000);
@@ -995,6 +1320,9 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     if(!wrap) return;
     let takes = [];
     try{ takes = await getTakesForTask(taskKey); } catch(e){ /* ignore */ }
+    currentTakes = takes;
+    const compareBtn = document.getElementById('recCompareBtn');
+    if(compareBtn) compareBtn.disabled = takes.length === 0;
     if(!takes.length){ wrap.innerHTML = ''; return; }
     wrap.innerHTML = `<div class="rec-takes-heading">Previous takes (${takes.length})</div>
       <div class="rec-takes-list">${takes.map(t => {
@@ -1029,9 +1357,27 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     });
   }
 
-  function openRecorder(taskText, taskKey, week){
+  function buildCompareOptionsHtml(w){
+    const vocabOpts = (w.vocab || []).map((v, i) => `<option value="v:${i}">${escapeHtml(v[0])} — ${escapeHtml(v[1])}</option>`).join('');
+    const dialogueOpts = (w.dialogue || []).map((line, i) => `<option value="d:${i}">${escapeHtml(line[0])}: ${escapeHtml(line[1])}</option>`).join('');
+    let html = '';
+    if(vocabOpts) html += `<optgroup label="Vocabulary">${vocabOpts}</optgroup>`;
+    if(dialogueOpts) html += `<optgroup label="Dialogue">${dialogueOpts}</optgroup>`;
+    return html;
+  }
+
+  function resolveCompareText(w, value){
+    const [kind, idxStr] = (value || '').split(':');
+    const idx = parseInt(idxStr, 10);
+    if(kind === 'v') return w.vocab && w.vocab[idx] && w.vocab[idx][0];
+    if(kind === 'd') return w.dialogue && w.dialogue[idx] && w.dialogue[idx][1];
+    return null;
+  }
+
+  function openRecorder(taskText, taskKey, w){
     closeRecorder(true); // in case one's already open somehow; skip badge refresh, we're about to reopen anyway
-    window.CURRENT_WEEK = week;
+    window.CURRENT_WEEK = w;
+    const compareOptionsHtml = buildCompareOptionsHtml(w);
     const overlay = document.createElement('div');
     overlay.className = 'recorder-overlay';
     overlay.id = 'recorderOverlay';
@@ -1046,11 +1392,38 @@ table.vtable td:first-child{font-weight:600;width:52%;}
         <div class="rec-actions" id="recActions">
           <button class="continue-btn" id="recCloseBtn" style="background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)"><span>Close</span></button>
         </div>
+        ${compareOptionsHtml ? `<div class="rec-compare">
+          <div class="rec-compare-label">Compare with native pronunciation</div>
+          <select id="recCompareSelect">${compareOptionsHtml}</select>
+          <div class="rec-compare-actions">
+            <button class="continue-btn" id="recPlayNativeBtn" style="background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)"><span>🔊 Native</span></button>
+            <button class="continue-btn" id="recCompareBtn" style="background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)" disabled><span>🆚 Native → My latest</span></button>
+          </div>
+        </div>` : ''}
       </div>`;
     document.body.appendChild(overlay);
     overlay.onclick = (e) => { if(e.target === overlay) closeRecorder(); };
     document.getElementById('recCloseBtn').onclick = closeRecorder;
     renderTakesList(taskKey);
+
+    if(compareOptionsHtml){
+      document.getElementById('recPlayNativeBtn').onclick = () => {
+        const val = document.getElementById('recCompareSelect').value;
+        const text = resolveCompareText(w, val);
+        if(text) playGermanAsync(text);
+      };
+      document.getElementById('recCompareBtn').onclick = async () => {
+        const compareBtn = document.getElementById('recCompareBtn');
+        const val = document.getElementById('recCompareSelect').value;
+        const text = resolveCompareText(w, val);
+        if(!text || !currentTakes.length) return;
+        compareBtn.disabled = true;
+        await playGermanAsync(text);
+        await new Promise(r => setTimeout(r, 350)); // brief gap so the two clips don't blur together
+        await playBlobAsync(currentTakes[0].blob);
+        compareBtn.disabled = false;
+      };
+    }
 
     const micBtn = document.getElementById('recMicBtn');
     const statusEl = document.getElementById('recStatus');
@@ -1086,7 +1459,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
         timerEl.textContent = '';
 
         try{
-          await saveTake(taskKey, taskText, week, blob, recRecorder.mimeType || 'audio/webm');
+          await saveTake(taskKey, taskText, w.week, blob, recRecorder.mimeType || 'audio/webm');
           statusEl.textContent = 'Saved. Record another take, or close.';
           await renderTakesList(taskKey); // refresh the list — the new one now appears at top
           document.getElementById('recPlaybackWrap').innerHTML = '';
@@ -1098,7 +1471,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
         document.getElementById('recActions').innerHTML = `
           <button class="continue-btn" id="recAgainBtn" style="background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)"><span>Record again</span></button>
           <button class="continue-btn" id="recCloseBtn2" style="background:var(--green)"><span>Done</span></button>`;
-        document.getElementById('recAgainBtn').onclick = () => openRecorder(taskText, taskKey, week);
+        document.getElementById('recAgainBtn').onclick = () => openRecorder(taskText, taskKey, w);
         document.getElementById('recCloseBtn2').onclick = closeRecorder;
       };
       recRecorder.start();
@@ -1271,14 +1644,14 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       btn.onclick = () => {
         const [di, ti] = btn.dataset.recordDay.split(':').map(n => parseInt(n, 10));
         const task = w.days[di] && w.days[di].tasks[ti];
-        if(task) openRecorder(task, `d${w.week}:${di}:${ti}`, w.week);
+        if(task) openRecorder(task, `d${w.week}:${di}:${ti}`, w);
       };
     });
     document.getElementById('weekPanel').querySelectorAll('[data-record-speak]').forEach(btn => {
       btn.onclick = () => {
         const i = parseInt(btn.dataset.recordSpeak, 10);
         const task = (w.speaking || [])[i];
-        if(task) openRecorder(task, `s${w.week}:${i}`, w.week);
+        if(task) openRecorder(task, `s${w.week}:${i}`, w);
       };
     });
     refreshRecordBadges(w);
@@ -1377,6 +1750,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 
     const cols = getCollections();
     const totalCards = (STATE.cards||[]).length;
+    const dueTotal = totalDueCount();
     const dir = STATE.studyDirection || 'de';
 
     let html = `<div class="wrap">
@@ -1391,7 +1765,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       </div>
       <button class="continue-btn" id="studyAllBtn" ${totalCards===0?'disabled':''}>
         <span>Study all collections
-          <small>${totalCards} card${totalCards===1?'':'s'} total</small>
+          <small>${dueTotal} due${dueTotal!==totalCards ? ' · '+totalCards+' total' : ''}</small>
         </span>
         <span class="arrow">→</span>
       </button>
@@ -1403,11 +1777,13 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       html += `<div class="phase-list">`;
       cols.forEach(c => {
         const n = collectionCardCount(c.id);
+        const due = dueCountFor(c.id);
+        const dueLabel = n===0 ? '' : (due>0 ? ` · ${due} due` : ' · all caught up');
         html += `
           <div class="phase-card collrow">
             <div class="phase-meta">
               <div class="title">${escapeHtml(c.name)}</div>
-              <div class="weeks">${n} card${n===1?'':'s'}</div>
+              <div class="weeks">${n} card${n===1?'':'s'}${dueLabel}</div>
             </div>
             <div class="collrow-actions">
               <button class="fc-smallbtn" data-study="${c.id}" ${n===0?'disabled':''}>Study</button>
@@ -1427,6 +1803,9 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       </button>
       <button class="continue-btn" id="exportMissingAudioBtn" style="margin-top:10px;background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)" ${totalCards===0?'disabled':''}>
         <span>Export cards missing audio</span>
+      </button>
+      <button class="continue-btn" id="downloadOfflineBtn" style="margin-top:10px;background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)">
+        <span>Download all audio for offline</span>
       </button>
     </div>`;
 
@@ -1457,6 +1836,7 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     });
     const exportBtn = document.getElementById('exportMissingAudioBtn');
     if(exportBtn && totalCards>0) exportBtn.onclick = exportMissingAudioCards;
+    document.getElementById('downloadOfflineBtn').onclick = downloadAllAudioOffline;
   }
 
   // ---------- audio sync: export flashcard text that has no generated clip yet ----------
@@ -1597,9 +1977,10 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     let html = `<div class="panel">`;
     cols.forEach(c => {
       const n = collectionCardCount(c.id);
+      const due = dueCountFor(c.id);
       html += `<div class="task">
         <input type="checkbox" id="pick-${c.id}" data-pick="${c.id}">
-        <label for="pick-${c.id}">${escapeHtml(c.name)} <span style="opacity:.6">(${n})</span></label>
+        <label for="pick-${c.id}">${escapeHtml(c.name)} <span style="opacity:.6">(${n} card${n===1?'':'s'} · ${due} due)</span></label>
       </div>`;
     });
     html += `<button class="continue-btn" id="startPickedBtn" style="margin-top:18px"><span>Start Studying</span></button>`;
@@ -1615,11 +1996,36 @@ table.vtable td:first-child{font-weight:600;width:52%;}
 
   // ---------- FLASHCARDS: study session ----------
   let STUDY = null;
-  function startStudySession(collectionIds){
-    const cards = shuffle(getCardsFor(collectionIds).slice());
-    if(cards.length === 0) return;
-    STUDY = {queue: cards, pos: 0, missed: [], total: cards.length, pass: 1};
+  function startStudySession(collectionIds, ignoreDue){
+    const allCards = getCardsFor(collectionIds);
+    if(allCards.length === 0) return;
+    const pool = ignoreDue ? allCards : allCards.filter(isCardDue);
+    if(pool.length === 0){
+      renderNothingDue(collectionIds);
+      return;
+    }
+    const cards = shuffle(pool.slice());
+    STUDY = {queue: cards, pos: 0, missed: [], total: cards.length, pass: 1, collectionIds};
     renderStudySession();
+  }
+
+  function renderNothingDue(collectionIds){
+    document.getElementById('homeView').classList.add('hidden');
+    document.getElementById('weekView').classList.add('hidden');
+    document.getElementById('flashView').classList.remove('hidden');
+    document.getElementById('topbar').classList.remove('hidden');
+    document.getElementById('topTitle').textContent = 'Flashcards';
+    document.getElementById('topSub').textContent = 'Nothing due right now';
+    document.getElementById('backBtn').onclick = renderFlashHome;
+    const view = document.getElementById('flashView');
+    view.innerHTML = `<div class="panel">
+      <div class="card" style="text-align:center;padding:30px 16px">
+        <h3 style="text-transform:none;font-size:18px;margin-bottom:6px">All caught up 🎉</h3>
+        <div style="font-size:13px;opacity:.75">You've been getting these right consistently, so they're spaced out further. They'll come back around on schedule — or study them now anyway.</div>
+      </div>
+      <button class="continue-btn" id="studyAnywayBtn" style="background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)"><span>Study anyway</span></button>
+    </div>`;
+    document.getElementById('studyAnywayBtn').onclick = () => startStudySession(collectionIds, true);
   }
 
   function renderStudySession(){
@@ -1681,11 +2087,13 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     };
     document.getElementById('gotBtn').onclick = (e) => {
       e.stopPropagation();
+      recordStudyResult(card, true);
       STUDY.pos++;
       renderStudySession();
     };
     document.getElementById('missedBtn').onclick = (e) => {
       e.stopPropagation();
+      recordStudyResult(card, false);
       STUDY.missed.push(card);
       STUDY.pos++;
       renderStudySession();
@@ -1866,11 +2274,14 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   }
 
   // ---------- boot ----------
-  loadAudioManifest();
-  showSection('curriculum');
-  document.querySelectorAll('#bottomNav .navbtn').forEach(btn => {
-    btn.onclick = () => showSection(btn.dataset.section);
-  });
+  function bootApp(){
+    loadAudioManifest();
+    showSection('curriculum');
+    document.querySelectorAll('#bottomNav .navbtn').forEach(btn => {
+      btn.onclick = () => showSection(btn.dataset.section);
+    });
+  }
+  initAuthAndBoot();
 
   if('serviceWorker' in navigator){
     window.addEventListener('load', () => {
