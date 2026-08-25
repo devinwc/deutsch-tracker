@@ -2318,6 +2318,19 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   initAuthAndBoot();
 
   if('serviceWorker' in navigator){
+    // If a NEW service worker takes control after this page already had one
+    // (i.e. this isn't the very first-ever visit), force a reload so the
+    // freshest JS/HTML actually runs — otherwise an already-open tab or an
+    // installed PWA can keep running stale code indefinitely, since normally
+    // an update only applies on the *next* full reload, which iOS PWAs in
+    // particular don't reliably get just from reopening the app.
+    const hadControllerAlready = !!navigator.serviceWorker.controller;
+    let reloadedForUpdate = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if(reloadedForUpdate || !hadControllerAlready) { reloadedForUpdate = true; return; }
+      reloadedForUpdate = true;
+      window.location.reload();
+    });
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });
