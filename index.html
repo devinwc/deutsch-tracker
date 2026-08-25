@@ -2307,6 +2307,17 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     document.getElementById('retakeQuizBtn').onclick = () => { QUIZ = null; renderQuizTab(w); };
   }
 
+  function showUpdateBanner(){
+    if(document.getElementById('updateBanner')) return; // don't stack duplicates
+    const banner = document.createElement('div');
+    banner.id = 'updateBanner';
+    banner.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:300;background:var(--ink);color:var(--cream);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;';
+    banner.innerHTML = `<span>A newer version is ready.</span>
+      <button style="background:var(--green);border:none;border-radius:var(--radius);padding:6px 12px;font-weight:700;font-size:12.5px;cursor:pointer;flex-shrink:0">Refresh</button>`;
+    banner.querySelector('button').onclick = () => window.location.reload();
+    document.body.appendChild(banner);
+  }
+
   // ---------- boot ----------
   function bootApp(){
     loadAudioManifest();
@@ -2318,18 +2329,18 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   initAuthAndBoot();
 
   if('serviceWorker' in navigator){
-    // If a NEW service worker takes control after this page already had one
-    // (i.e. this isn't the very first-ever visit), force a reload so the
-    // freshest JS/HTML actually runs — otherwise an already-open tab or an
-    // installed PWA can keep running stale code indefinitely, since normally
-    // an update only applies on the *next* full reload, which iOS PWAs in
-    // particular don't reliably get just from reopening the app.
+    // A new service worker taking over used to force an automatic reload here.
+    // Removed: on GitHub Pages + iOS Safari this risked a reload loop (repeated
+    // controllerchange events firing before the page could ever finish loading,
+    // which matches exactly what a stuck-forever login screen looks like).
+    // Safer alternative: show a small tap-to-refresh banner and let the person
+    // choose when to reload — never automatic, so a loop is no longer possible.
     const hadControllerAlready = !!navigator.serviceWorker.controller;
-    let reloadedForUpdate = false;
+    let bannerShown = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if(reloadedForUpdate || !hadControllerAlready) { reloadedForUpdate = true; return; }
-      reloadedForUpdate = true;
-      window.location.reload();
+      if(bannerShown || !hadControllerAlready) { bannerShown = true; return; }
+      bannerShown = true;
+      showUpdateBanner();
     });
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js').catch(() => {});

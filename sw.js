@@ -1,6 +1,6 @@
 // Deutsch Tracker service worker — caches the app shell so it works fully offline.
 // Bump CACHE_NAME whenever index.html or its assets change, so old clients pick up the update.
-const CACHE_NAME = 'deutsch-tracker-v23';
+const CACHE_NAME = 'deutsch-tracker-v24';
 const SHELL_FILES = [
   './',
   './index.html',
