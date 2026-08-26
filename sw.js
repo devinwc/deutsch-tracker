@@ -1,6 +1,6 @@
 // Deutsch Tracker service worker — caches the app shell so it works fully offline.
 // Bump CACHE_NAME whenever index.html or its assets change, so old clients pick up the update.
-const CACHE_NAME = 'deutsch-tracker-v26';
+const CACHE_NAME = 'deutsch-tracker-v16';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -8,21 +8,10 @@ const SHELL_FILES = [
   './icon-192.svg',
   './icon-512.svg',
 ];
-// Cached separately (not via addAll) so a flaky CDN fetch can't fail the
-// whole install and break offline caching for the core shell.
-const OPTIONAL_FILES = [
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll(SHELL_FILES).then(() =>
-        Promise.all(OPTIONAL_FILES.map((url) =>
-          cache.add(url).catch(() => {}) // best effort — sync just won't be cached offline yet if this fails
-        ))
-      )
-    )
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_FILES))
   );
   self.skipWaiting();
 });
