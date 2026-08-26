@@ -446,6 +446,13 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   }
 
   // ---------- Supabase sync ----------
+  // TEMPORARILY DISABLED after a real/suspected data-loss incident during
+  // testing. This flag is the single kill switch for all cloud sync — with it
+  // false, no push, pull, or auth call can touch local data, full stop.
+  // Re-enable only after the underlying issue is understood and this has been
+  // tested somewhere lower-stakes than a live device with real progress on it.
+  const SYNC_ENABLED = false;
+
   // Local storage stays the source of truth for instant loads and offline use.
   // Supabase is a sync target: every save schedules a debounced background push,
   // and on sign-in (or app load, if already signed in) a pull-and-merge brings in
@@ -453,9 +460,9 @@ table.vtable td:first-child{font-weight:600;width:52%;}
   // fine for one person across a couple of devices, not built for heavy conflicts.
   const SUPABASE_URL = 'https://ltcukmqocxwfbvlsovnj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0Y3VrbXFvY3h3ZmJ2bHNvdm5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDMxMDAsImV4cCI6MjA5NDQxOTEwMH0.vViIrmuOEf8Hxw_xnCj3UnM0EqtFe-Uc-leeA9ULM_k';
-  const sb = (window.supabase && window.supabase.createClient)
+  const sb = (SYNC_ENABLED && window.supabase && window.supabase.createClient)
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    : null;
+    : null; // null here means every sync function below no-ops immediately, by the same guard they already had
 
   let CURRENT_USER = null;
   let syncPushTimer = null;
@@ -1842,9 +1849,16 @@ table.vtable td:first-child{font-weight:600;width:52%;}
       <button class="continue-btn" id="downloadOfflineBtn" style="margin-top:10px;background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)">
         <span>Download all audio for offline</span>
       </button>
-      <button class="continue-btn" id="openSyncBtn" style="margin-top:10px;background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)">
-        <span>${CURRENT_USER ? 'Synced — signed in as ' + escapeHtml(CURRENT_USER.email) : 'Sign in to sync across devices'}</span>
+      <button class="continue-btn" id="openSyncBtn" style="margin-top:10px;background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)" ${!SYNC_ENABLED?'disabled':''}>
+        <span>${!SYNC_ENABLED ? 'Cloud sync temporarily off' : (CURRENT_USER ? 'Synced — signed in as ' + escapeHtml(CURRENT_USER.email) : 'Sign in to sync across devices')}</span>
       </button>
+      <button class="continue-btn" id="backupDataBtn" style="margin-top:10px;background:var(--cream-dim);color:var(--ink);border:1.5px solid var(--ink)">
+        <span>Back up my data (download)</span>
+      </button>
+      <button class="continue-btn" id="restoreDataBtn" style="margin-top:10px;background:none;border:1px dashed var(--ink);color:var(--ink);opacity:.8">
+        <span>Restore from a backup file</span>
+      </button>
+      <input type="file" id="restoreFileInput" accept="application/json" class="hidden">
     </div>`;
 
     view.innerHTML = html;
@@ -1875,18 +1889,67 @@ table.vtable td:first-child{font-weight:600;width:52%;}
     const exportBtn = document.getElementById('exportMissingAudioBtn');
     if(exportBtn && totalCards>0) exportBtn.onclick = exportMissingAudioCards;
     document.getElementById('downloadOfflineBtn').onclick = downloadAllAudioOffline;
-    document.getElementById('openSyncBtn').onclick = () => {
-      if(CURRENT_USER){
-        if(confirm('Sign out of sync on this device? Your data stays saved locally either way.')){
-          sb.auth.signOut().finally(() => { CURRENT_USER = null; renderFlashHome(); });
+    if(SYNC_ENABLED){
+      document.getElementById('openSyncBtn').onclick = () => {
+        if(CURRENT_USER){
+          if(confirm('Sign out of sync on this device? Your data stays saved locally either way.')){
+            sb.auth.signOut().finally(() => { CURRENT_USER = null; renderFlashHome(); });
+          }
+        } else {
+          document.getElementById('authError').textContent = '';
+          document.getElementById('authError').style.color = '';
+          showAuthOverlay();
         }
-      } else {
-        document.getElementById('authError').textContent = '';
-        document.getElementById('authError').style.color = '';
-        showAuthOverlay();
-      }
+      };
+    }
+    document.getElementById('backupDataBtn').onclick = backupDataToFile;
+    document.getElementById('restoreFileInput').onchange = (e) => {
+      const file = e.target.files[0];
+      if(file) restoreDataFromFile(file);
+      e.target.value = '';
     };
+    document.getElementById('restoreDataBtn').onclick = () => document.getElementById('restoreFileInput').click();
   }
+
+  // ---------- manual backup / restore (local file, no network) ----------
+  function backupDataToFile(){
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      app: 'deutsch-tracker',
+      state: STATE
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.download = `deutsch-tracker-backup-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function restoreDataFromFile(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      let payload;
+      try{ payload = JSON.parse(reader.result); }
+      catch(e){ alert("That doesn't look like a valid backup file."); return; }
+      const incoming = payload && payload.state ? payload.state : payload; // accept either the wrapped format or a raw state object
+      if(!incoming || typeof incoming !== 'object'){ alert("That doesn't look like a valid backup file."); return; }
+      const cardCount = (incoming.cards || []).length;
+      const colCount = (incoming.collections || []).length;
+      if(!confirm(`Restore this backup? It has ${colCount} collection(s) and ${cardCount} card(s), plus your checklist progress. This replaces everything currently in the app on this device.`)) return;
+      STATE = migrateCards(Object.assign({}, STATE_DEFAULTS, incoming));
+      saveState();
+      renderState();
+      alert('Restored.');
+    };
+    reader.onerror = () => alert('Could not read that file.');
+    reader.readAsText(file);
+  }
+
 
   // ---------- audio sync: export flashcard text that has no generated clip yet ----------
   function getMissingAudioCards(){
